@@ -1,0 +1,12 @@
+[project]
+name = "genesis"
+version = "0.1.0"
+description = "Genesis Environment"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi[standard]",
+    "sqlalchemy[asyncio]",
+    "psycopg2-binary",
+    "geoalchemy2",
+    "pytest",
+]

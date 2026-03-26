@@ -1,0 +1,29 @@
+# Add to .gitignore if not present:
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# -------------------------------------------------------------
+# AI Agent Constraints (Genesis Template)
+# -------------------------------------------------------------
+# We COMMIT the following architecture to the template:
+# !.specify/ (The Spec Kit Configuration)
+# !.specify/memory/constitution.md (The Genesis Rules)
+# !specs/ (The feature specifications)
+# !.gemini/commands/, !.claude/commands/, etc. (The Agent tooling rules)
+
+# However, we must IGNORE the agents' personal execution logs, 
+# token configurations, and history so students get a clean slate.
+.claude/history/
+.claude/mcp.json
+.gemini/logs/
+.gemini/brain/*/logs/
+.gemini/history/
+.opencode/history/
+.cursorrules
+
+# MacOS artifacts
+.DS_Store

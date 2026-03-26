@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: genesis
+Version: 0.1.0
+Summary: Genesis Environment
+Requires-Python: >=3.10
+Requires-Dist: fastapi[standard]
+Requires-Dist: sqlalchemy[asyncio]
+Requires-Dist: psycopg2-binary
+Requires-Dist: geoalchemy2
+Requires-Dist: pytest
