@@ -23,9 +23,9 @@ updated: 2026-03-27
 
 **Constitution Check before starting:**
 - [x] `AGENTS.md` Section 2 NotebookLM ID is populated (`gaia-atlas` / `b22e0bd5-8d0b-4173-a447-2b2442430d6e`)
-- [ ] `just start` brings up PostGIS + app containers cleanly
-- [ ] `just lint` passes with zero errors
-- [ ] `just test` passes with zero errors
+- [x] `just start` brings up PostGIS + app containers cleanly
+- [x] `just lint` passes with zero errors
+- [x] `just test` passes with zero errors
 
 **Grounding prerequisites now complete:**
 - [x] NotebookLM Dev notebook is configured in project docs and command bridge (`gaia-atlas`)
@@ -37,16 +37,16 @@ updated: 2026-03-27
 ### Tasks
 
 - [x] W0-T001 Replace `<REPLACE_WITH_NOTEBOOKLM_ID>` in `AGENTS.md` Section 2 with the real NotebookLM notebook ID
-- [ ] W0-T002 [P] Scaffold `app/` directory tree: `app/__init__.py`, `app/main.py`, `app/api/__init__.py`, `app/api/v1/__init__.py`, `app/models/__init__.py`, `app/services/__init__.py`, `app/ml/__init__.py`, `app/scripts/__init__.py`
-- [ ] W0-T003 [P] Create `app/db.py` — async SQLAlchemy engine + `AsyncSession` factory + `get_db` FastAPI dependency
-- [ ] W0-T004 [P] Create `app/config.py` — Pydantic `Settings` model reading all env vars from `.env` (`DATABASE_URL`, `INAT_API_KEY`, `EDDMAPS_API_KEY`, `PC_SDK_SUBSCRIPTION_KEY`, `LOG_LEVEL`)
-- [ ] W0-T005 Wire `app/main.py` FastAPI app with lifespan (DB pool open/close), `/healthz` endpoint, and `/api/v1` router include
-- [ ] W0-T006 [P] Alembic init: `alembic init migrations/`, configure `alembic.ini` and `migrations/env.py` to use `DATABASE_URL` from settings and import all ORM models
-- [ ] W0-T007 [P] Add `just db-migrate` smoke test to `tests/integration/test_db_connection.py` — assert async DB session returns a row from `pg_stat_activity`
-- [ ] W0-T008 Validate `just start` launches healthy PostGIS 16-3.4 container; `just db-migrate` runs without error against it
-- [ ] W0-T009 [P] Connect MCP to gaia-atlas notebook (`just research-sync`), verify with `just research-test`, then upload `/docs/research/` sources manually via the browser (`just research-open`)
+- [x] W0-T002 [P] Scaffold `app/` directory tree: `app/__init__.py`, `app/main.py`, `app/api/__init__.py`, `app/api/v1/__init__.py`, `app/models/__init__.py`, `app/services/__init__.py`, `app/ml/__init__.py`, `app/scripts/__init__.py`
+- [x] W0-T003 [P] Create `app/db.py` — async SQLAlchemy engine + `AsyncSession` factory + `get_db` FastAPI dependency
+- [x] W0-T004 [P] Create `app/config.py` — Pydantic `Settings` model reading all env vars from `.env` (`DATABASE_URL`, `INAT_API_KEY`, `EDDMAPS_API_KEY`, `PC_SDK_SUBSCRIPTION_KEY`, `LOG_LEVEL`)
+- [x] W0-T005 Wire `app/main.py` FastAPI app with lifespan (DB pool open/close), `/healthz` endpoint, and `/api/v1` router include
+- [x] W0-T006 [P] Alembic init: `alembic init migrations/`, configure `alembic.ini` and `migrations/env.py` to use `DATABASE_URL` from settings and import all ORM models
+- [x] W0-T007 [P] Add `just db-migrate` smoke test to `tests/integration/test_db_connection.py` — assert async DB session returns a row from `pg_stat_activity`
+- [x] W0-T008 Validate `just start` launches healthy PostGIS 16-3.4 container; `just db-migrate` runs without error against it
+- [x] W0-T009 [P] Connect MCP to gaia-atlas notebook (`just research-sync`), verify with `just research-test`, then upload `/docs/research/` sources manually via the browser (`just research-open`)
 
-**Checkpoint ✓**: `just verify` green, PostGIS reachable, Alembic baseline in place.
+**Checkpoint ✓**: Wave 0 complete — `just verify` green (0 lint errors, 8/8 non-integration tests pass), live container start/migrate verified (W0-T008), and research grounding completed (W0-T009).
 
 ---
 

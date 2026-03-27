@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report:
-- Version change: 2.0.0 -> 2.0.1
+- Version change: 2.0.1 -> 2.0.2
 - List of modified principles:
   - I. Research-First Protocol -> I. Remote-Sensing & Research-First Protocol
   - II. The Agent Memory Protocol -> II. The Anti-Context Rot Protocol (Read-Execute-Write)
@@ -17,6 +17,7 @@ Sync Impact Report:
 - Follow-up TODOs:
   - ✅ NotebookLM Notebook ID connected: "gaia-atlas" (b22e0bd5-8d0b-4173-a447-2b2442430d6e)
   - ✅ Grounding fixes applied for review-state semantics, spectral band contract, and prediction lineage
+  - ✅ Added explicit operational health-endpoint exception to API versioning rule
 -->
 # Invasive Trace Constitution
 
@@ -74,9 +75,10 @@ an explicit decision recorded in `AGENTS.md` and a constitution amendment.
 | Automation | `just` command runner | No Makefile, shell scripts as entry points |
 | Linting | Ruff | No flake8, black, pylint |
 
-All REST endpoints MUST be versioned under `/api/v1/`. API keys MUST be read exclusively
-from environment variables and MUST NEVER be hardcoded, logged, or interpolated into
-strings that appear in logs.
+All REST endpoints MUST be versioned under `/api/v1/`, with one exception: operational
+health endpoints MAY exist at root (for example `/healthz`) for container/liveness checks.
+API keys MUST be read exclusively from environment variables and MUST NEVER be
+hardcoded, logged, or interpolated into strings that appear in logs.
 
 **Rationale:** A single coherent stack eliminates toolchain fragmentation, makes
 onboarding deterministic, and ensures the geospatial and ML dependency graph remains
@@ -196,4 +198,4 @@ All pull requests and agent task sessions MUST verify compliance with the Global
 Stack (Section III), the Spatial Data Integrity Contract (Section IV), and the
 Anti-Context Rot Protocol (Section II) before marking work complete.
 
-**Version**: 2.0.1 | **Ratified**: 2026-03-27 | **Last Amended**: 2026-03-27
+**Version**: 2.0.2 | **Ratified**: 2026-03-27 | **Last Amended**: 2026-03-27

@@ -172,6 +172,7 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 | `just research-test` | Test Connection | Verifies MCP connection to gaia-atlas is live |
 | `just research-serve` | Start MCP Server | Starts the NotebookLM MCP server for VS Code / Copilot integration |
 | `just research-open` | Open in Browser | Opens gaia-atlas in the browser |
+| `just verify` | Validate Gate | Runs lint + test together as the required quality gate |
 | `just lint` | Clean Code | Ruff check + format |
 | `just test` | Run Tests | Pytest via uv |
 
@@ -185,10 +186,22 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] Author `AGENTS.md` v1.0 with PostGIS schema & API contracts
 - [x] Draft `compose.yml` for Podman (PostGIS 16-3.4 + FastAPI app)
 - [x] Connect NotebookLM notebook `gaia-atlas` in Section 2
+- [x] Specify Wave 0 bootstrap gate in `specs/002-wave0-environment-bootstrap/spec.md`
+- [x] Draft Wave 0 implementation plan in `specs/002-wave0-environment-bootstrap/plan.md`
+- [x] Add Wave 0 planning artifacts: `research.md`, `data-model.md`, `quickstart.md`
+- [x] Generate Wave 0 executable task list in `specs/002-wave0-environment-bootstrap/tasks.md`
+- [x] Wave 0 implementation complete — bootstrap runtime, async DB layer, Alembic baseline, `/healthz`, quality gate passed (ruff clean, 8/8 non-integration tests pass)
 
-### In Progress — Pillar I: Spatial Infrastructure
+### Completed — Pillar I Bootstrap (Wave 0)
+- [x] Scaffold FastAPI app structure: `app/api/`, `app/models/`, `app/services/`
+- [x] `app/config.py` — pydantic-settings backed runtime config
+- [x] `app/db.py` — async SQLAlchemy engine + `get_db` dependency
+- [x] `app/main.py` — FastAPI with lifespan, `/healthz`, bootstrap v1 router
+- [x] `alembic.ini` + `migrations/env.py` — async Alembic wired to runtime `DATABASE_URL`
+- [x] `migrations/versions/0001_baseline.py` — Wave 0 baseline revision (no domain tables)
+
+### In Progress — Pillar I: Spatial Infrastructure (Wave 1)
 - [ ] Implement Alembic migration for all four PostGIS tables
-- [ ] Scaffold FastAPI app structure: `app/api/`, `app/models/`, `app/services/`
 - [ ] Seed endpoint: `POST /api/v1/observations/sync` (iNaturalist + EDDMapS)
 
 ### Backlog — Pillar II: Remote Sensing
@@ -207,4 +220,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Retraining trigger: batch feedback collection
 
 ---
-⏱️ **State:** Architecture Initialized | 🧠 **Memory:** Updated v1.0 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 Implemented | 🧠 **Memory:** Updated v1.1 | 🛠️ **Platform:** Podman / macOS Universal
