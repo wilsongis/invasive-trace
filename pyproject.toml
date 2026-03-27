@@ -1,12 +1,49 @@
 [project]
-name = "genesis"
+name = "invasive-trace"
 version = "0.1.0"
-description = "Genesis Environment"
-requires-python = ">=3.10"
+description = "Invasive plant species detection and mapping for the Southern Grassland Institute"
+requires-python = ">=3.12"
 dependencies = [
+    # Web
     "fastapi[standard]",
+    "uvicorn[standard]",
+    "jinja2",
+    "python-dotenv",
+    # Database / Spatial
     "sqlalchemy[asyncio]",
+    "asyncpg",
     "psycopg2-binary",
     "geoalchemy2",
+    "alembic",
+    "shapely",
+    # Raster / Remote Sensing
+    "rasterio",
+    "pystac-client",
+    "planetary-computer",
+    "numpy",
+    # HTTP (async, for iNaturalist / EDDMapS consumers)
+    "httpx",
+    # ML
+    "scikit-learn",
+    "xgboost",
+    # Dev / Test
     "pytest",
+    "pytest-asyncio",
 ]
+
+[project.optional-dependencies]
+ml-deep = [
+    # PyTorch installed separately via platform wheel; keep optional
+    "torch",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

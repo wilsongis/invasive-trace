@@ -11,27 +11,29 @@
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
+<!-- Stack is LOCKED — do not change these values without a constitution amendment. -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Python 3.12 (managed by `uv`)
+**Primary Dependencies**: FastAPI, SQLAlchemy (async) + GeoAlchemy2, Rasterio, pystac-client, planetary-computer, scikit-learn, XGBoost, PyTorch (U-Net)
+**Storage**: PostgreSQL 16 + PostGIS 3.4 — four canonical tables: `regions_of_interest`, `invasion_predictions`, `ground_truth_observations`, `spectral_time_series`
+**Testing**: `pytest` + `pytest-asyncio` via `just test`
+**Target Platform**: Podman-containerized Linux (macOS dev via `just run`)
+**Project Type**: Geospatial AI web service
+**Performance Goals**: [feature-specific — e.g., STAC query < 5s for 1-year time range, inference < 2s per ROI]
+**Constraints**: COG-native raster reads only; all geometries SRID 4326; `confidence` constrained 0.0–1.0 at DB layer; API keys from env vars only
+**Scale/Scope**: [feature-specific — e.g., ROI count, scene count, prediction volume]
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Verify ALL of the following before proceeding:
+
+- [ ] **Anti-Context Rot (II)**: Checked `AGENTS.md` Sections 4, 5, 6 — no schema column names, API URLs, or model versions guessed.
+- [ ] **Tech Stack (III)**: Feature uses only mandated stack (FastAPI, uv, PostGIS, SQLAlchemy async, Rasterio/COG, pystac-client, Ruff). No prohibited tech introduced.
+- [ ] **Spatial Integrity (IV)**: Any schema changes have a corresponding Alembic migration AND an `AGENTS.md` Section 4 update planned. SRID 4326 enforced. `confidence` CHECK constraint preserved.
+- [ ] **API Resilience (V)**: All external API calls (Planetary Computer, iNaturalist, EDDMapS, USGS 3DEP) implement exponential backoff (3 retries), graceful skip on missing tiles, and `is_masked=TRUE` for `cloud_cover > 0.20`.
+- [ ] **ML Registry (VI)**: Any model references use exact version strings from `AGENTS.md` Section 6. New versions registered in `AGENTS.md` before being referenced in code.
 
 ## Project Structure
 
@@ -48,51 +50,30 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
+
 <!--
   ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
+  for this feature. The canonical Invasive Trace structure is shown — extend it;
+  do NOT introduce top-level directories outside this layout without a constitution amendment.
 -->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+app/
+├── api/v1/           # FastAPI routers — one file per resource
+├── models/           # SQLAlchemy ORM + GeoAlchemy2 table classes
+├── services/         # Business logic: stac_client, indices, inat_consumer, eddmaps_consumer
+├── ml/               # ML pipeline stages: stage1_anomaly, stage2_classifier, stage3_unet
+└── scripts/          # One-off scripts: seed_observations, etc.
 
 tests/
-├── contract/
-├── integration/
-└── unit/
+├── integration/      # DB + external API integration tests (use pytest-asyncio)
+└── unit/             # Pure function unit tests (spectral indices, ML helpers)
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+migrations/           # Alembic migration scripts
+models/               # Trained model artifact storage: models/{model_name}/{version}/
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: [Document which app/ sub-packages this feature touches and any new files to be created]
 
 ## Complexity Tracking
 

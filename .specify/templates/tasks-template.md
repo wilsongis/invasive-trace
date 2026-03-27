@@ -20,10 +20,11 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- **Invasive Trace canonical layout**: `app/api/v1/`, `app/models/`, `app/services/`, `app/ml/`, `app/scripts/`
+- **Tests**: `tests/unit/`, `tests/integration/`
+- **Migrations**: `migrations/` (Alembic)
+- **Model artifacts**: `models/{model_name}/{version}/`
+- Paths shown in task examples use this layout — adjust only if plan.md documents a different structure
 
 <!-- 
   ============================================================================
@@ -60,16 +61,16 @@ description: "Task list template for feature implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-Examples of foundational tasks (adjust based on your project):
+Invasive Trace foundational tasks (adjust/remove as applicable):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T004 Alembic migration for any new/modified PostGIS table columns (`just db-migrate`)
+- [ ] T005 [P] SQLAlchemy async model class(es) in `app/models/` with GeoAlchemy2 geometry types (SRID 4326)
+- [ ] T006 [P] FastAPI router skeleton under `app/api/v1/` with versioned prefix
+- [ ] T007 Async DB session dependency (`app/db.py`) and lifespan wiring in `app/main.py`
+- [ ] T008 [P] Environment variable loading validated at startup (`python-dotenv` + `os.environ`)
+- [ ] T009 Structured error handler: external API failures MUST NOT propagate unhandled to request lifecycle
 
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+**Checkpoint**: Foundation ready — user story implementation can now begin in parallel
 
 ---
 

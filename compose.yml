@@ -1,0 +1,87 @@
+# Invasive Trace — Podman Compose Stack
+# Compatible with: podman compose / podman-compose
+# Usage: just start
+
+name: invasive-trace
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostGIS 16-3.4 — Spatial database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: invasive-trace-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-invasive_trace}
+      POSTGRES_USER: ${POSTGRES_USER:-appuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      # Prevent accidental production runs with default credentials
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./migrations/init:/docker-entrypoint-initdb.d:ro   # optional seed SQL
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-invasive_trace}"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - backend
+
+  # ---------------------------------------------------------------------------
+  # FastAPI App — Invasive Trace API server
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: invasive-trace-app
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      # Database connection — matches db service above
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-appuser}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-invasive_trace}
+      # External API keys — populate via .env file, never commit values
+      INAT_API_KEY: ${INAT_API_KEY:-}
+      EDDMAPS_API_KEY: ${EDDMAPS_API_KEY:-}
+      # Planetary Computer uses the planetary-computer library's token refresh;
+      # set PC_SDK_SUBSCRIPTION_KEY if using a registered subscription key.
+      PC_SDK_SUBSCRIPTION_KEY: ${PC_SDK_SUBSCRIPTION_KEY:-}
+      # Runtime settings
+      PYTHONUNBUFFERED: "1"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "8000:8000"
+    volumes:
+      # Live-reload source mount for development; remove for production
+      - .:/app:z
+      # Persist trained model artifacts across container restarts
+      - model_artifacts:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+
+# ---------------------------------------------------------------------------
+# Volumes
+# ---------------------------------------------------------------------------
+volumes:
+  db_data:
+    driver: local
+  model_artifacts:
+    driver: local
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+networks:
+  backend:
+    driver: bridge

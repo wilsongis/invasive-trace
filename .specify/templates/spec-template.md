@@ -68,12 +68,16 @@
 ### Edge Cases
 
 <!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
+  ACTION REQUIRED: Fill in feature-specific edge cases.
+  The following are REQUIRED for any feature touching external APIs or raster data.
 -->
 
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+- What happens when the Planetary Computer returns 0 scenes for the requested ROI + date range?
+- What happens when a scene has `cloud_cover > 0.20` (must set `is_masked=TRUE`, exclude from index computation)?
+- What happens when an external API returns HTTP 429? (exponential backoff, max 3 retries, then log + skip)
+- What happens when a STAC item exists in the catalog but the COG tile is missing or corrupt?
+- What happens when `confidence` is computed outside the 0.0–1.0 range?
+- [Add feature-specific edge cases below]
 
 ## Requirements *(mandatory)*
 
@@ -84,21 +88,37 @@
 
 ### Functional Requirements
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+<!--
+  Invasive Trace FR prompts — include whichever apply to this feature:
+  - Spatial: geometry SRID 4326, GiST index on new geometry columns
+  - API resilience: backoff + skip pattern for Planetary Computer / iNaturalist / EDDMapS
+  - Schema integrity: Alembic migration required for new/modified columns
+  - ML registry: model_version matches AGENTS.md Section 6 registry entry
+  - HITL: validated flag + validator_notes writable via PATCH endpoint
+-->
 
-*Example of marking unclear requirements:*
+- **FR-001**: System MUST [specific capability]
+- **FR-002**: System MUST [specific capability]
+- **FR-003**: System MUST [specific capability]
+- **FR-004**: System MUST handle HTTP 429 from [external API] with exponential backoff (max 3 retries); log and skip after failure
+- **FR-005**: System MUST [data requirement]
 
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+*Mark unclear requirements:*
+
+- **FR-006**: [NEEDS CLARIFICATION: describe the ambiguity]
 
 ### Key Entities *(include if feature involves data)*
 
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
+<!--
+  Invasive Trace canonical tables (check AGENTS.md Section 4 for DDL before adding columns):
+  - regions_of_interest — WGS84 polygons, GiST index
+  - invasion_predictions — species_label, confidence (0–1), hotspot_score, model_version, validated
+  - ground_truth_observations — source IN ('iNaturalist','EDDMapS','field_survey'), raw_payload JSONB
+  - spectral_time_series — ndvi, endvi, red_edge, cloud_cover, is_masked, stac_item
+  Only list entities this feature creates or modifies.
+-->
+
+- **[Entity]**: [Which canonical table, which columns this feature reads/writes, any new columns requiring migration]
 
 ## Success Criteria *(mandatory)*
 

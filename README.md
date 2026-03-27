@@ -1,59 +1,92 @@
-# 🧬 Project Genesis
-This is the baseline template repository for building AI-augmented, Spec-Driven applications using a strictly enforced Python+FastAPI+HTMX+PostGIS stack.
-## 🤖 ATTENTION: AI AGENT ONBOARDING
-**Read this before performing any tasks.** You are operating as the **Legacy Mentor**. This repository is governed by the **Agent Memory Protocol (v1.0)**.
+# Invasive Trace
 
-### 1. Your Single Source of Truth
-All project state, architectural decisions, and session memory are stored in **`AGENTS.md`** and enforced by the **`.specify/memory/constitution.md`**.
-- **Requirement:** At the start of every session, you must read `AGENTS.md` and the Spec Kit constitution.
-- **Requirement:** Before concluding, you must update `AGENTS.md` with the new project state.
+Geospatial AI platform for the **Southern Grassland Institute** — detects, classifies, and maps invasive plant species across study areas using multi-temporal satellite imagery, spectral phenology analysis, and a three-stage ML execution chain.
 
-### 2. The Command Bridge (Universal)
-Do not use raw shell commands. Use `just` to ensure cross-platform (Mac/Windows) stability.
+## Overview
 
-| Task | Command | AI Tooling Note |
-| :--- | :--- | :--- |
-| **Initialize** | `just init` | Sets up venv and template files. |
-| **Research Sync** | `just research-sync` | Ingests `/docs/research` into NotebookLM. |
-| **Research Auth** | `just research-auth` | Logs into AntiGravity/NotebookLM MCP. |
-| **Start Server** | `just start` | Manages Podman container lifecycle. |
-| **Native Run** | `just run` | Runs FastAPI via `uv` (Native). |
-| **Standards** | `just lint` | Enforces Ruff formatting. |
+| Component | Technology |
+|:---|:---|
+| **Backend** | FastAPI + Python 3.12 (`uv`) |
+| **Database** | PostgreSQL 16 + PostGIS 3.4 |
+| **ORM / Spatial** | SQLAlchemy (async) + GeoAlchemy2 |
+| **Frontend** | Jinja2 + HTMX + Tailwind CSS |
+| **Raster I/O** | Rasterio + GDAL (COG-native) |
+| **Remote Sensing** | pystac-client + planetary-computer (Sentinel-2 L2A) |
+| **ML: Classical** | Scikit-learn · XGBoost (spectral feature vectors) |
+| **ML: Deep** | PyTorch U-Net (spatial texture / hotspot scoring) |
+| **Container** | Podman + Containerfile |
+| **Automation** | `just` |
 
-### 3. Spec-Driven & Research-First Protocol
-This is a research-heavy project leveraging Spec-Driven Development via GitHub Spec Kit. You are prohibited from writing feature code unless it is planned and specified.
-- **Step 1 (Research):** Use `notebooklm-mcp` to query the project's knowledge base.
-- **Step 2 (Specify):** Use `/speckit.specify [feature]` to define the requirement.
-- **Step 3 (Plan):** Use `/speckit.plan` to generate the technical implementation plan.
-- **Step 4 (Tasks):** Use `/speckit.tasks` to break the plan into actionable checklist steps.
-- **Step 5 (Implement):** Use `/speckit.implement` to execute the code.
+## Quick Start
 
-### 4. Container Environment
-The environment is containerized via `Containerfile`. 
-- **Tech Stack:** FastAPI, PostGIS, Python 3.12 (UV managed).
-- **Access:** The server runs on port `8000`.
-- **Database:** PostGIS spatial extensions are pre-configured.
-
-### 5. Memory Recovery
-If you lose context or the user says **"Status"**, execute:
-1. `cat AGENTS.md`
-2. `ls docs/research`
-3. Summarize the next steps from the `## Active Context` section of `AGENTS.md`.
-
----
-**Legacy Standard Enforced.**
-"Take a deep breath and work on this problem step by step."
-
-## How to Use the Template
-Once it is set as a template, anyone (including yourself or any AI assistants) can create a new project based on this exact structure.
-
-There are two ways to use it:
-
-1. Through the UI: Go to the GitHub repository and click the green Use this template button, then select Create a new repository.
-2. Through the CLI: You can use the GitHub CLI to clone it directly:
+**Prerequisites:** Podman, `just`, `uv`
 
 ```bash
-gh repo create <new-repo-name> --template wilsongis/genesis-template
+# 1. Copy environment variables and supply API keys
+cp .env.example .env
+
+# 2. Start PostGIS + FastAPI via Podman compose
+just start
+
+# 3. Apply database migrations
+just db-migrate
+
+# 4. Seed ground-truth observations (iNaturalist + EDDMapS)
+just seed-data
 ```
 
-**After cloning**, refer to `docs/getting_started.md` for full instructions on configuring your AI agents and bootstrapping the Spec Kit environment.
+The API will be available at `http://localhost:8000`.
+
+## AI Execution Chain
+
+Three-stage pipeline that runs against every Region of Interest (ROI):
+
+| Stage | Model | Purpose |
+|:---|:---|:---|
+| **Stage 1** | `AnomalyDetector` (IsolationForest / Z-score) | Detect temporal NDVI departures (invasive early green-up) |
+| **Stage 2** | `FocalClassifier` (RandomForest / XGBoost) | Species-level spectral discrimination + confidence score |
+| **Stage 3** | `UNetTexture` (PyTorch U-Net, 512×512 patches) | Spatial texture analysis → hotspot spread-risk score |
+
+## Command Reference
+
+| Command | Description |
+|:---|:---|
+| `just start` | Build if needed; start full Podman compose stack (app + PostGIS) |
+| `just stop` | Stop and remove all compose containers |
+| `just run` | Run FastAPI natively via `uv` (requires local PostGIS) |
+| `just db-migrate` | Apply Alembic migrations |
+| `just db-rollback` | Roll back the last migration |
+| `just db-revision msg="…"` | Autogenerate a new migration from model changes |
+| `just seed-data` | Fetch iNaturalist + EDDMapS records into `ground_truth_observations` |
+| `just research-sync` | Push `/docs/research` to NotebookLM |
+| `just lint` | Ruff check + format |
+| `just test` | Run pytest suite |
+| `just verify` | lint + test |
+
+## Data Sources
+
+- **Microsoft Planetary Computer** — Sentinel-2 L2A, Landsat HLS, NAIP (STAC v1)
+- **iNaturalist API** — Taxon-filtered invasive species observations (`INAT_API_KEY`)
+- **EDDMapS API** — Regional occurrence records (`EDDMAPS_API_KEY`)
+- **USGS 3DEP** — Elevation context for topographic modelling (public, no key required)
+
+All external consumers implement exponential backoff (3 retries) on HTTP 429 and skip cloud-masked scenes (`cloud_cover > 0.20`).
+
+## Database Schema
+
+Four PostGIS tables with GiST spatial indexes — see [`AGENTS.md`](AGENTS.md#4-postgis-schema-canonical) for the canonical DDL and [`docs/research/03-DATA-DICTIONARY.md`](docs/research/03-DATA-DICTIONARY.md) for the full column dictionary.
+
+- `regions_of_interest` — WGS84 study-area polygons
+- `spectral_time_series` — Per-scene NDVI / ENDVI / Red-Edge indices
+- `invasion_predictions` — Model outputs with confidence + hotspot score
+- `ground_truth_observations` — iNaturalist / EDDMapS / field-survey records
+
+## AI Agent Onboarding
+
+This project follows the **Read-Execute-Write Memory Protocol**. All agents must:
+
+1. **READ** [`AGENTS.md`](AGENTS.md) before every task — schema, API contracts, and ML registry are defined there.
+2. **EXECUTE** using the standard stack only (see `STACK.md`).
+3. **WRITE** an update to `AGENTS.md` after every architectural decision.
+
+> "Take a deep breath and work on this problem step by step."

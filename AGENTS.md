@@ -1,48 +1,210 @@
-# AGENTS.md: [Project Name]
+# AGENTS.md: Invasive Trace
+
+> **Single Source of Truth** — Read this before every task. Write to this after every architectural decision.
 
 ## 1. Project Identity
-**Objective:** [Describe the project's purpose here]
-**Status:** Verified
+**Objective:** Detect, classify, and map invasive plant species across Southern Grassland Institute study areas using multi-temporal remote sensing, spectral analysis, and a three-stage AI execution chain.
+**Client:** Southern Grassland Institute
+**Status:** Architecture Phase — PostGIS schema and containerized environment initialized.
+
+---
 
 ## 2. Research & Grounding
-- **Notebook Name:** "Project Genesis Master Research"
-- **Notebook ID:** `1a2b3c4d-5e6f-7g8h-your-unique-id-here`
+- **Notebook Name:** "gaia-atlas"
+- **Notebook ID:** `b22e0bd5-8d0b-4173-a447-2b2442430d6e`
 - **MCP Provider:** AntiGravity / notebooklm-mcp
-- **Local Source Sync:** `/docs/research/`
+- **Local Source Set:** `/docs/research/`
 - **Primary (Dev):** `just research-sync`
 - **Secondary (Prod):** `just notebook=prod research-sync`
 
-**Rule:** Always use the Dev notebook for experimental features. Only sync to Prod when the `SRS` (Software Requirements Specification) is finalized.
-
-## 3. Global Tech Stack (The Standard)
-- **Backend:** FastAPI (Python)
-- **Frontend:** Jinja2 + HTMX + Tailwind
-- **Automation:** Just + UV
-- **MCP Tools:** NotebookLM-MCP
-
-## 4. The Agent Memory Protocol
-**Read-Execute-Write Memory Protocol:**
-1. **READ**: Always read `AGENTS.md` and the `.specify/memory/constitution.md` before starting a task to gain context.
-2. **SPECIFY**: Define the feature, plan, and break it into actionable tasks using `/speckit` commands.
-3. **EXECUTE**: Work on the objective step-by-step according to the Global Tech Stack and Spec-Driven plan.
-4. **WRITE**: Update the `AGENTS.md` with current status and new knowledge before ending the task.
-
-## 5. Critical Commands (The Justfile Bridge)
-
-| Command | Action | Platform | Description |
-| :--- | :--- | :--- | :--- |
-| `just start` | **Container Start** | Universal | Builds if missing and starts the Podman container. |
-| `just run` | **Native Start** | Universal | Runs FastAPI via `uv` for rapid development. |
-| `just research-sync` | **Sync Knowledge** | Universal | Pushes `/docs/research` to NotebookLM. |
-| `just lint` | **Clean Code** | Universal | Runs Ruff for standards enforcement. |
-| `/speckit.specify` | **Create Spec** | AI Agent | Defines a new feature requirements spec. |
-| `/speckit.plan` | **Create Plan** | AI Agent | Creates technical implementation plan based on the spec. |
-| `/speckit.tasks` | **Create Tasks** | AI Agent | Breaks plan into independent executing tasks. |
-
-## 5. Active Context & Todo
-- [x] Initialize repository from Genesis template
-- [ ] Connect NotebookLM ID
-- [x] Define initial SRS (Software Requirements Specification)
+**Rule:** Always use the Dev notebook for experimental features. Use `just research-sync` to initialize the MCP connection, `just research-test` to verify it, and upload `/docs/research/` sources through the NotebookLM UI. Only initialize the Prod notebook once an SRS pillar is finalized.
 
 ---
-⏱️ **State:** Verified | 🧠 **Memory:** Fresh | 🛠️ **Platform:** Universal
+
+## 3. Global Tech Stack (The Standard)
+
+| Layer | Technology | Constraint |
+| :--- | :--- | :--- |
+| **Backend** | FastAPI + Python 3.12 | No Django/Flask |
+| **Database** | PostgreSQL 16 + PostGIS 3.4 | No SQLite/MongoDB |
+| **ORM / Spatial** | SQLAlchemy (async) + GeoAlchemy2 | Strictly typed geometries |
+| **Frontend** | Jinja2 + HTMX + Tailwind CSS | No React/Vue/Svelte |
+| **Raster I/O** | Rasterio + GDAL (via Containerfile) | COG-native reads only |
+| **Remote Sensing** | pystac-client + planetary-computer | Planetary Computer STAC endpoint |
+| **ML: Classical** | Scikit-learn (RandomForest / XGBoost) | Spectral feature vectors |
+| **ML: Deep** | PyTorch (U-Net architecture) | Spatial texture classification |
+| **Package Mgr** | `uv` (strictly) | No pip/poetry |
+| **Container** | Podman + Containerfile | No Docker Desktop |
+| **Automation** | `just` | No Makefile |
+| **Linting** | Ruff | No flake8/black/pylint |
+
+---
+
+## 4. PostGIS Schema (Canonical)
+
+> ⚠️ **Contract Lock**: Do NOT alter column names or geometry types without a schema migration and an AGENTS.md update.
+
+### `regions_of_interest`
+```sql
+CREATE TABLE regions_of_interest (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        TEXT NOT NULL,
+    description TEXT,
+    geom        GEOMETRY(POLYGON, 4326) NOT NULL,  -- WGS84 polygon
+    created_at  TIMESTAMPTZ DEFAULT now(),
+    updated_at  TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_roi_geom ON regions_of_interest USING GIST (geom);
+```
+
+### `invasion_predictions`
+```sql
+CREATE TABLE invasion_predictions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    roi_id          UUID REFERENCES regions_of_interest(id) ON DELETE CASCADE,
+    species_label   TEXT NOT NULL,           -- e.g. "Bromus tectorum"
+    confidence      FLOAT NOT NULL CHECK (confidence BETWEEN 0.0 AND 1.0),
+    hotspot_score   FLOAT,                   -- Stage 3 ecological spread risk (0–1)
+    geom            GEOMETRY(POINT, 4326) NOT NULL,
+    model_version   TEXT NOT NULL,           -- Stage 2 classifier version, e.g. "rf-v0.1.0"
+    predicted_at    TIMESTAMPTZ DEFAULT now(),
+    validated       BOOLEAN,                 -- NULL=pending review, TRUE=confirmed, FALSE=rejected
+    validator_notes TEXT
+);
+CREATE INDEX idx_pred_geom   ON invasion_predictions USING GIST (geom);
+CREATE INDEX idx_pred_roi    ON invasion_predictions (roi_id);
+CREATE INDEX idx_pred_score  ON invasion_predictions (hotspot_score DESC);
+```
+
+### `ground_truth_observations`
+```sql
+CREATE TABLE ground_truth_observations (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source        TEXT NOT NULL CHECK (source IN ('iNaturalist', 'EDDMapS', 'field_survey')),
+    external_id   TEXT,                      -- Original source record ID
+    species_label TEXT NOT NULL,
+    observer      TEXT,
+    observed_at   DATE,
+    geom          GEOMETRY(POINT, 4326) NOT NULL,
+    is_confirmed  BOOLEAN DEFAULT TRUE,
+    raw_payload   JSONB                      -- Full API response preserved
+);
+CREATE INDEX idx_gto_geom    ON ground_truth_observations USING GIST (geom);
+CREATE INDEX idx_gto_source  ON ground_truth_observations (source);
+```
+
+### `spectral_time_series`
+```sql
+CREATE TABLE spectral_time_series (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    roi_id      UUID REFERENCES regions_of_interest(id) ON DELETE CASCADE,
+    scene_date  DATE NOT NULL,
+    platform    TEXT NOT NULL CHECK (platform IN ('sentinel-2', 'landsat-hls', 'naip')),
+    stac_item   TEXT NOT NULL,               -- STAC item ID from Planetary Computer
+    ndvi        FLOAT,
+    endvi       FLOAT,
+    red_edge    FLOAT,                       -- Red Edge Chlorophyll Index
+    cloud_cover FLOAT,                       -- Scene-level cloud fraction (QA60)
+    is_masked   BOOLEAN DEFAULT FALSE        -- True if cloud-masked out
+);
+CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
+```
+
+---
+
+## 5. API Contracts (External)
+
+| Service | Endpoint | Auth | Usage |
+| :--- | :--- | :--- | :--- |
+| **Microsoft Planetary Computer** | `https://planetarycomputer.microsoft.com/api/stac/v1` | Token (planetary-computer lib) | Sentinel-2 L2A, Landsat HLS, NAIP queries |
+| **iNaturalist** | `https://api.inaturalist.org/v1/observations` | API Key (env: `INAT_API_KEY`) | Ground truth seeding; taxon filter by invasive list |
+| **EDDMapS** | `https://www.eddmaps.org/api/` | API Key (env: `EDDMAPS_API_KEY`) | Regional occurrence records |
+| **USGS 3DEP** | `https://tnmapi.cr.usgs.gov/api/` | None (public) | Elevation context for topographic modelling |
+
+**Failure Modes — All external API consumers MUST handle:**
+- HTTP 429 (rate limit): exponential backoff, max 3 retries
+- Missing tiles / partial STAC results: log and skip, never raise unhandled
+- Cloud-masked scenes (`cloud_cover > 0.20`): mark `is_masked=TRUE`, exclude from index computation
+
+**Sentinel-2 band contract for spectral work:**
+- NDVI: B08 (NIR) + B04 (Red)
+- ENDVI: B08 (NIR) + B04 (Red) + B03 (Green)
+- Red-edge metric: derived from the red-edge bands (B05/B8A as required by the chosen index implementation)
+
+---
+
+## 6. ML Model Registry
+
+| Stage | Model | Version | Purpose | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Stage 1** | `AnomalyDetector` (IsolationForest / Z-score on NDVI) | `anomaly-v0.1.0` | Temporal green-up departure detection | Planned |
+| **Stage 2** | `FocalClassifier` (RandomForest / XGBoost) | `rf-v0.1.0` | Species-level spectral discrimination | Planned |
+| **Stage 3** | `UNetTexture` (PyTorch U-Net, 512×512 patches) | `unet-v0.1.0` | Spatial texture → hotspot scoring | Planned |
+
+**Model artifact path:** `./models/{model_name}/{version}/`
+**Retraining trigger:** HITL feedback batch ≥ 50 validated/rejected predictions
+**Prediction lineage rule:** `invasion_predictions.model_version` stores the Stage 2 classifier version (`rf-v0.1.0` for the current registry). Stage 1 and Stage 3 versions must be captured in logs or sidecar metadata, but not in the `model_version` column.
+
+---
+
+## 7. The Agent Memory Protocol
+**Read-Execute-Write Loop:**
+1. **READ**: Read `AGENTS.md` sections 4 (schema), 5 (API contracts), 6 (ML registry) before any feature work.
+2. **EXECUTE**: Chain-of-Thought decomposition into atomic tasks. Each task sees only the code it needs (scoped context).
+3. **WRITE**: After every architectural decision or pillar completion, update the relevant section of this file.
+
+**Anti-Context Rot rules:**
+- Never guess schema column names — check Section 4.
+- Never hard-code API URLs — check Section 5.
+- Never reference a model by name without checking Section 6 for the correct version string.
+
+---
+
+## 8. Critical Commands (The Justfile Bridge)
+
+| Command | Action | Description |
+| :--- | :--- | :--- |
+| `just start` | Container Start | Builds if missing; starts Podman compose stack (app + PostGIS) |
+| `just run` | Native Start | Runs FastAPI via `uv` for rapid iteration |
+| `just db-migrate` | Schema Migration | Applies Alembic migrations against the PostGIS container |
+| `just seed-data` | Seed Ground Truth | Fetches iNaturalist + EDDMapS records into `ground_truth_observations` |
+| `just research-sync` | Init Notebook | Connects the MCP server to the gaia-atlas notebook (run once after clone) |
+| `just research-test` | Test Connection | Verifies MCP connection to gaia-atlas is live |
+| `just research-serve` | Start MCP Server | Starts the NotebookLM MCP server for VS Code / Copilot integration |
+| `just research-open` | Open in Browser | Opens gaia-atlas in the browser |
+| `just lint` | Clean Code | Ruff check + format |
+| `just test` | Run Tests | Pytest via uv |
+
+---
+
+## 9. Active Context & Roadmap
+
+### Completed
+- [x] Initialize repository from Genesis template
+- [x] Define initial SRS (Software Requirements Specification)
+- [x] Author `AGENTS.md` v1.0 with PostGIS schema & API contracts
+- [x] Draft `compose.yml` for Podman (PostGIS 16-3.4 + FastAPI app)
+- [x] Connect NotebookLM notebook `gaia-atlas` in Section 2
+
+### In Progress — Pillar I: Spatial Infrastructure
+- [ ] Implement Alembic migration for all four PostGIS tables
+- [ ] Scaffold FastAPI app structure: `app/api/`, `app/models/`, `app/services/`
+- [ ] Seed endpoint: `POST /api/v1/observations/sync` (iNaturalist + EDDMapS)
+
+### Backlog — Pillar II: Remote Sensing
+- [ ] Planetary Computer STAC query service (`app/services/stac_client.py`)
+- [ ] Spectral index calculator: NDVI, ENDVI, Red-Edge (`app/services/indices.py`)
+- [ ] Cloud-masking (QA60 band) pipeline
+
+### Backlog — Pillar III: AI Execution Chain
+- [ ] Stage 1: Anomaly detector training script
+- [ ] Stage 2: Focal classifier training + feature extraction
+- [ ] Stage 3: U-Net inference service
+
+### Backlog — Pillar IV: HITL Dashboard
+- [ ] Leaflet map + HTMX prediction review panel
+- [ ] `PATCH /api/v1/predictions/{id}/validate` endpoint
+- [ ] Retraining trigger: batch feedback collection
+
+---
+⏱️ **State:** Architecture Initialized | 🧠 **Memory:** Updated v1.0 | 🛠️ **Platform:** Podman / macOS Universal
