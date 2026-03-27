@@ -71,4 +71,4 @@ Wave 0 is complete only when:
 - the DB smoke test passes
 - `just verify` is green (with diagnostic lint/test runs if needed)
 - NotebookLM grounding is verified and research sources are uploaded
-- SC-004 evidence is logged in `specs/002-wave0-environment-bootstrap/checklists/requirements.md`
+- SC-004 evidence is logged in `specs/archive/002-wave0-environment-bootstrap/checklists/requirements.md`

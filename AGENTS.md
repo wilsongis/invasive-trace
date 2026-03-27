@@ -186,10 +186,10 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] Author `AGENTS.md` v1.0 with PostGIS schema & API contracts
 - [x] Draft `compose.yml` for Podman (PostGIS 16-3.4 + FastAPI app)
 - [x] Connect NotebookLM notebook `gaia-atlas` in Section 2
-- [x] Specify Wave 0 bootstrap gate in `specs/002-wave0-environment-bootstrap/spec.md`
-- [x] Draft Wave 0 implementation plan in `specs/002-wave0-environment-bootstrap/plan.md`
+- [x] Specify Wave 0 bootstrap gate in `specs/archive/002-wave0-environment-bootstrap/spec.md`
+- [x] Draft Wave 0 implementation plan in `specs/archive/002-wave0-environment-bootstrap/plan.md`
 - [x] Add Wave 0 planning artifacts: `research.md`, `data-model.md`, `quickstart.md`
-- [x] Generate Wave 0 executable task list in `specs/002-wave0-environment-bootstrap/tasks.md`
+- [x] Generate Wave 0 executable task list in `specs/archive/002-wave0-environment-bootstrap/tasks.md`
 - [x] Wave 0 implementation complete — bootstrap runtime, async DB layer, Alembic baseline, `/healthz`, quality gate passed (ruff clean, 8/8 non-integration tests pass)
 
 ### Completed — Pillar I Bootstrap (Wave 0)

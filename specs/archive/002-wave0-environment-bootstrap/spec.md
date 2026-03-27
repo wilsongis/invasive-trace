@@ -97,7 +97,7 @@ As a contributor moving from bootstrap into implementation work, I need the Dev 
 - **SC-001**: A contributor can start the local bootstrap environment and receive a healthy response from `/healthz` within 10 minutes of beginning setup, using only the documented repository workflow.
 - **SC-002**: The migration baseline and database smoke test both succeed on the local environment without manual edits to connection settings during the validation run.
 - **SC-003**: The repository’s Wave 0 quality gate completes with 0 lint errors and 0 test failures.
-- **SC-004**: The Dev NotebookLM grounding workflow is verified for 100% of Wave 0 completion attempts before any Wave 1 task is started, evidenced by a checked run log entry in `specs/002-wave0-environment-bootstrap/checklists/requirements.md`.
+- **SC-004**: The Dev NotebookLM grounding workflow is verified for 100% of Wave 0 completion attempts before any Wave 1 task is started, evidenced by a checked run log entry in `specs/archive/002-wave0-environment-bootstrap/checklists/requirements.md`.
 	- **Completion attempt definition**: One full execution of the Wave 0 validation sequence in `quickstart.md`, from runtime start through research verification and manual source upload confirmation. Any rerun after a failure is a new attempt and requires a separate checklist row.
 - **SC-005**: `/healthz` responds with HTTP 200 in under 250ms in local validation runs (measured over 10 requests; p95 <= 250ms).
 - **SC-006**: Database smoke test execution against `pg_stat_activity` completes in under 5 seconds per run (measured in CI/local pytest timing output).

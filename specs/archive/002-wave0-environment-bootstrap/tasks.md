@@ -1,6 +1,6 @@
 # Tasks: Wave 0 - Environment Bootstrap
 
-**Input**: Design documents from `/specs/002-wave0-environment-bootstrap/`
+**Input**: Design documents from `/specs/archive/002-wave0-environment-bootstrap/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, quickstart.md
 
 **Tests**: Tests are required for this feature because the spec explicitly requires a health endpoint validation path and a database smoke test through `just test`.
@@ -97,9 +97,9 @@
 
 ### Implementation for User Story 3
 
-- [X] T018 [US3] Verify the Dev NotebookLM workflow is accurately documented in `specs/002-wave0-environment-bootstrap/quickstart.md` and `AGENTS.md`
+- [X] T018 [US3] Verify the Dev NotebookLM workflow is accurately documented in `specs/archive/002-wave0-environment-bootstrap/quickstart.md` and `AGENTS.md`
 - [X] T019 [US3] Validate the MCP connection workflow against `justfile` and `AGENTS.md` using `just research-sync`, `just research-test`, and `just research-open`
-- [ ] T020 [US3] Record SC-004 research-grounding evidence per completion attempt in `specs/002-wave0-environment-bootstrap/checklists/requirements.md` (`attempt_id`, date, operator, `just research-sync` result, `just research-test` result, manual `/docs/research/` upload confirmation)
+- [ ] T020 [US3] Record SC-004 research-grounding evidence per completion attempt in `specs/archive/002-wave0-environment-bootstrap/checklists/requirements.md` (`attempt_id`, date, operator, `just research-sync` result, `just research-test` result, manual `/docs/research/` upload confirmation)
 
 **Checkpoint**: User Story 3 is complete when the Dev notebook connection is verified and the research source set is uploaded.
 
@@ -112,10 +112,10 @@
 - [X] T021 [P] Run `just verify` and resolve Wave 0 failures across `app/main.py`, `app/config.py`, `app/db.py`, `tests/integration/test_healthz.py`, and `tests/integration/test_db_connection.py`
 - [X] T022 If `just verify` fails, run `just lint` and `just test` separately to isolate failures and apply targeted fixes
 - [ ] T023 Run `just db-migrate` and `just start` and confirm runtime + migration readiness before final quality gate
-- [ ] T024 Run the validation sequence from `specs/002-wave0-environment-bootstrap/quickstart.md` end-to-end and confirm Wave 0 completion criteria are satisfied
-- [X] T028 Add explicit FR-013 governance validation note in `specs/002-wave0-environment-bootstrap/checklists/requirements.md` confirming pre-existing grounding context was not reimplemented in Wave 0
+- [ ] T024 Run the validation sequence from `specs/archive/002-wave0-environment-bootstrap/quickstart.md` end-to-end and confirm Wave 0 completion criteria are satisfied
+- [X] T028 Add explicit FR-013 governance validation note in `specs/archive/002-wave0-environment-bootstrap/checklists/requirements.md` confirming pre-existing grounding context was not reimplemented in Wave 0
 - [ ] T029 Update completion state in `AGENTS.md` and `TODO.md` only after `just verify` passes and all Wave 0 evidence artifacts are complete
-- [ ] T030 Capture SC-001 setup-to-health elapsed time evidence in `specs/002-wave0-environment-bootstrap/checklists/requirements.md` and verify completion in <= 10 minutes using the `quickstart.md` validation sequence
+- [ ] T030 Capture SC-001 setup-to-health elapsed time evidence in `specs/archive/002-wave0-environment-bootstrap/checklists/requirements.md` and verify completion in <= 10 minutes using the `quickstart.md` validation sequence
 
 ---
 

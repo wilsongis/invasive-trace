@@ -1,7 +1,7 @@
 # Implementation Plan: Wave 0 - Environment Bootstrap
 
 **Branch**: `002-wave0-environment-bootstrap` | **Date**: 2026-03-27 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/002-wave0-environment-bootstrap/spec.md`
+**Input**: Feature specification from `/specs/archive/002-wave0-environment-bootstrap/spec.md`
 
 **Note**: This plan defines the blocking bootstrap gate for all later waves. It is intentionally narrow: minimal runtime, database access path, migration baseline, and verified research grounding.
 
@@ -40,7 +40,7 @@ Verify ALL of the following before proceeding:
 ### Documentation (this feature)
 
 ```text
-specs/002-wave0-environment-bootstrap/
+specs/archive/002-wave0-environment-bootstrap/
 ├── plan.md              # This file
 ├── research.md          # Technical decisions for bootstrap scope
 ├── data-model.md        # Bootstrap runtime entities
@@ -103,7 +103,7 @@ alembic.ini
 - Add `tests/integration/test_db_connection.py` to query `pg_stat_activity` through the async session.
 - Validate `just start`, `just db-migrate`, and `just verify` (with `just lint` / `just test` as diagnostics if verify fails).
 - Verify NotebookLM connection with `just research-sync` and `just research-test`; upload `/docs/research/` manually via NotebookLM UI.
-- Capture evidence for SC-004 in `specs/002-wave0-environment-bootstrap/checklists/requirements.md` after each completion attempt.
+- Capture evidence for SC-004 in `specs/archive/002-wave0-environment-bootstrap/checklists/requirements.md` after each completion attempt.
 
 ## Risk Management
 
