@@ -110,6 +110,7 @@ async def sync_observations(
             failure_class,
         )
 
+    await db.commit()
     return ObservationSyncResponse(
         sync_run_id=sync_run_id,
         sources_polled=["iNaturalist", "EDDMapS"],

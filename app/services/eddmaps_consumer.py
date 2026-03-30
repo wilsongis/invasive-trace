@@ -172,7 +172,6 @@ async def sync_eddmaps(
             else:
                 stats.records_inserted += 1
 
-        await session.commit()
         return stats
     except asyncio.CancelledError:
         logger.warning("EDDMapS sync cancelled sync_run_id=%s", sync_run_id)

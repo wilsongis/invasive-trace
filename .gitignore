@@ -5,6 +5,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+venv/
+dist/
+*.egg-info/
+.env*
 
 # -------------------------------------------------------------
 # AI Agent Constraints (Genesis Template)

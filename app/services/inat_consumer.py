@@ -186,7 +186,6 @@ async def sync_inaturalist(
             else:
                 stats.records_inserted += 1
 
-        await session.commit()
         return stats
     except asyncio.CancelledError:
         logger.warning("iNaturalist sync cancelled sync_run_id=%s", sync_run_id)

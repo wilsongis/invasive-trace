@@ -35,7 +35,10 @@ class ROICreate(BaseModel):
     @field_validator("geom_wkt")
     @classmethod
     def validate_polygon_wkt(cls, value: str) -> str:
-        geom = wkt.loads(value)
+        try:
+            geom = wkt.loads(value)
+        except Exception as exc:
+            raise ValueError(f"Invalid WKT geometry: {exc}") from exc
         if geom.geom_type != "Polygon":
             raise ValueError("ROI geometry must be a POLYGON WKT")
         if not geom.is_valid:
@@ -56,7 +59,10 @@ class ROIResponse(BaseModel):
 
 def parse_wkt_polygon(value: str) -> BaseGeometry:
     """Return a validated Shapely polygon from WKT input."""
-    geom = _force_2d(wkt.loads(value))
+    try:
+        geom = _force_2d(wkt.loads(value))
+    except Exception as exc:
+        raise ValueError(f"Invalid WKT geometry: {exc}") from exc
     if geom.geom_type != "Polygon":
         raise ValueError("ROI geometry must be a POLYGON WKT")
     if not geom.is_valid:

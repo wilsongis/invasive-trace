@@ -230,12 +230,27 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Record go/no-go recommendation before any production pipeline change is proposed
 
 ### Backlog — Pillar II: Remote Sensing
-- [ ] Planetary Computer STAC query service (`app/services/stac_client.py`)
-- [ ] Spectral index calculator: NDVI, ENDVI, Red-Edge (`app/services/indices.py`)
-- [ ] Cloud-masking (QA60 band) pipeline
+### Active — Pillar II: Remote Sensing (spec 005)
+- [x] Author `specs/005-pillar2-remote-sensing/spec.md` — feature specification artifact completed
+- [x] Author `specs/005-pillar2-remote-sensing/plan.md` — full implementation plan (Phases 0–6)
+- [x] Author `specs/005-pillar2-remote-sensing/research.md` — STAC client, index formula, cloud-mask decisions
+- [x] Author `specs/005-pillar2-remote-sensing/data-model.md` — schema contract, Pydantic schemas, Stage 1 downstream contract
+- [x] Author `specs/005-pillar2-remote-sensing/quickstart.md` — end-to-end validation flow
+- [x] Author `specs/005-pillar2-remote-sensing/contracts/scenes-api.md` — POST /ingest + GET /scenes API contract
+- [x] Create feature branch `005-pillar2-remote-sensing`
+- [x] Migration `0003_spectral_upsert_constraint` — UNIQUE(roi_id, stac_item)
+- [x] `app/services/stac_client.py` — Planetary Computer STAC query + URL signing
+- [x] `app/services/cloud_mask.py` — QA60 cloud fraction + is_masked flag
+- [x] `app/services/indices.py` — NDVI / ENDVI / Red-Edge CIre computation
+- [x] `app/services/scene_ingestion.py` — pipeline orchestrator + upsert
+- [x] `app/schemas/spectral.py` — SceneIngestRequest/Response, SpectralRecord
+- [x] `app/api/v1/scenes.py` — POST /api/v1/scenes/ingest, GET /api/v1/scenes
+- [x] Unit tests: test_indices.py, test_cloud_mask.py
+- [x] Integration test: test_scene_ingestion.py
+- [ ] `just verify` gate — 0 lint errors, 0 test failures
 
-### Backlog — Pillar III: AI Execution Chain
-- [ ] Stage 1: Anomaly detector training script
+### Backlog — Pillar II: Remote Sensing
+- [x] Plan authored — see `specs/005-pillar2-remote-sensing/` for full design artifacts
 - [ ] Stage 2: Focal classifier training + feature extraction
 - [ ] Stage 3: U-Net inference service
 
@@ -245,4 +260,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Retraining trigger: batch feedback collection
 
 ---
-⏱️ **State:** Wave 0 complete; Wave 1 (004-wave1-spatial-infrastructure-seeding) **complete and merged** — PostGIS schema, ORM models, ROI + observation sync APIs, Phase 6 hardening, compose startup fix; next active work is Wave 1.5 AlphaEarth benchmark spike or Pillar II Remote Sensing | 🧠 **Memory:** Updated v1.5 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 + Wave 1 complete; Pillar II Remote Sensing **implementation complete except global verify blocker** — spec 005 code/migration/tests delivered on branch `005-pillar2-remote-sensing`; focused spec tests pass; full `just verify` currently blocked by pre-existing `tests/integration/test_healthz.py` route-surface expectation for `/` | 🧠 **Memory:** Updated v1.7 | 🛠️ **Platform:** Podman / macOS Universal

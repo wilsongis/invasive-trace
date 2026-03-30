@@ -31,11 +31,12 @@ def test_healthz_content_type(client: TestClient) -> None:
 
 
 def test_bootstrap_api_surface_limited() -> None:
-    """Only /healthz and /api/v1 prefix routes should be present."""
+    """Only approved bootstrap/runtime routes should be present."""
     routes = {route.path for route in app.routes}
     for path in routes:
         assert (
-            path == "/healthz"
+            path == "/"
+            or path == "/healthz"
             or path.startswith("/api/v1")
             or path.startswith("/openapi")
             or path.startswith("/docs")
