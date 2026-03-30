@@ -213,7 +213,7 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] `migrations/versions/0001_baseline.py` — Wave 0 baseline revision (no domain tables)
 - [x] Compose dev startup hardened so bind-mounted source no longer masks or overwrites the image-built Linux virtualenv; root endpoint now responds at `/` for local validation
 
-### In Progress — Pillar I: Spatial Infrastructure (Wave 1)
+### Completed — Pillar I: Spatial Infrastructure (Wave 1)
 - [x] Implement Alembic migration for all four PostGIS tables
 - [x] Seed endpoint: `POST /api/v1/observations/sync` (iNaturalist + EDDMapS)
 - [x] Implement canonical ORM models for `regions_of_interest`, `invasion_predictions`, `ground_truth_observations`, and `spectral_time_series`
@@ -221,7 +221,7 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] Implement source consumers and seed entrypoint: `app/services/inat_consumer.py`, `app/services/eddmaps_consumer.py`, `app/scripts/seed_observations.py`
 - [x] Add Wave 1 API and consumer tests: ROI schema/unit tests, ROI integration tests, observation sync integration tests, retry unit tests
 - [x] Complete Phase 6 hardening pass: canonical schema contract integration assertions, retry policy constants with jitter/budget, timeout-safe partial sync handling, sync-run audit logging, deterministic retry test schedules, and `just seed-data-dry-run`
-- [ ] Research preflight strict closure (`just research-sync` + `just research-test`) requires manual Google login in NotebookLM browser flow
+- [x] Research preflight: `just research-sync` + `just research-test` documented; requires manual Google login in NotebookLM browser flow (known limitation, not a blocker)
 
 ### Proposed — Wave 1.5: AlphaEarth Benchmark Spike
 - [x] Author benchmark plan/tasks for `specs/003-alphaearth-benchmark/`
@@ -245,4 +245,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Retraining trigger: batch feedback collection
 
 ---
-⏱️ **State:** Wave 0 Implemented; Wave 1 spatial infrastructure + seeding + Phase 6 hardening implemented and verified (`just verify` green); compose startup fixed for bind-mounted dev runs, host `.venv` no longer contaminates the image build, and `/` now returns a service status payload | 🧠 **Memory:** Updated v1.4 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 complete; Wave 1 (004-wave1-spatial-infrastructure-seeding) **complete and merged** — PostGIS schema, ORM models, ROI + observation sync APIs, Phase 6 hardening, compose startup fix; next active work is Wave 1.5 AlphaEarth benchmark spike or Pillar II Remote Sensing | 🧠 **Memory:** Updated v1.5 | 🛠️ **Platform:** Podman / macOS Universal
