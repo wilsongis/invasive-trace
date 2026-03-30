@@ -57,30 +57,34 @@ updated: 2026-03-27
 
 ### Phase 1A — PostGIS ORM Models & Migration
 
-- [ ] W1-T001 [P] [PI] Create `app/models/roi.py` — SQLAlchemy `RegionOfInterest` model matching `AGENTS.md` Section 4 DDL exactly (`GEOMETRY(POLYGON, 4326)`, GiST index)
-- [ ] W1-T002 [P] [PI] Create `app/models/prediction.py` — `InvasionPrediction` model (`GEOMETRY(POINT, 4326)`, `confidence CHECK 0.0–1.0`, FK to `regions_of_interest`)
-- [ ] W1-T003 [P] [PI] Create `app/models/observation.py` — `GroundTruthObservation` model (`source CHECK IN ('iNaturalist','EDDMapS','field_survey')`, `raw_payload JSONB`)
-- [ ] W1-T004 [P] [PI] Create `app/models/spectral.py` — `SpectralTimeSeries` model (`platform CHECK IN ('sentinel-2','landsat-hls','naip')`, `is_masked BOOLEAN`)
-- [ ] W1-T005 [PI] Autogenerate Alembic migration: `just db-revision msg="create four canonical tables"` — review output, verify geometry columns and all CHECK constraints are present
-- [ ] W1-T006 [PI] Apply migration: `just db-migrate` — confirm four tables exist in PostGIS container
+- [x] W1-T001 [P] [PI] Create `app/models/roi.py` — SQLAlchemy `RegionOfInterest` model matching `AGENTS.md` Section 4 DDL exactly (`GEOMETRY(POLYGON, 4326)`, GiST index)
+- [x] W1-T002 [P] [PI] Create `app/models/prediction.py` — `InvasionPrediction` model (`GEOMETRY(POINT, 4326)`, `confidence CHECK 0.0–1.0`, FK to `regions_of_interest`)
+- [x] W1-T003 [P] [PI] Create `app/models/observation.py` — `GroundTruthObservation` model (`source CHECK IN ('iNaturalist','EDDMapS','field_survey')`, `raw_payload JSONB`)
+- [x] W1-T004 [P] [PI] Create `app/models/spectral.py` — `SpectralTimeSeries` model (`platform CHECK IN ('sentinel-2','landsat-hls','naip')`, `is_masked BOOLEAN`)
+- [x] W1-T005 [PI] Create Alembic migration for canonical tables and verify geometry columns and CHECK constraints
+- [x] W1-T006 [PI] Apply migration: `just db-migrate` — confirm four tables exist in PostGIS container
 
 ### Phase 1B — ROI API Endpoints
 
-- [ ] W1-T007 [P] [PI] Create `app/api/v1/rois.py` router — `POST /api/v1/rois` (create ROI), `GET /api/v1/rois/{id}` (fetch with geometry), `GET /api/v1/rois` (list)
-- [ ] W1-T008 [PI] Pydantic schemas in `app/schemas/roi.py` — `ROICreate` (WKT polygon input), `ROIResponse` (GeoJSON geometry output)
-- [ ] W1-T009 [P] [PI] Unit test `tests/unit/test_roi_schemas.py` — validate WKT → GeoJSON round-trip serialization
-- [ ] W1-T010 [P] [PI] Integration test `tests/integration/test_roi_endpoints.py` — POST creates row, GET returns GeoJSON geometry
+- [x] W1-T007 [P] [PI] Create `app/api/v1/rois.py` router — `POST /api/v1/rois` (create ROI), `GET /api/v1/rois/{id}` (fetch with geometry), `GET /api/v1/rois` (list)
+- [x] W1-T008 [PI] Pydantic schemas in `app/schemas/roi.py` — `ROICreate` (WKT polygon input), `ROIResponse` (GeoJSON geometry output)
+- [x] W1-T009 [P] [PI] Unit test `tests/unit/test_roi_schemas.py` — validate WKT → GeoJSON round-trip serialization
+- [x] W1-T010 [P] [PI] Integration test `tests/integration/test_roi_endpoints.py` — POST creates row, GET returns GeoJSON geometry
 
 ### Phase 1C — Ground Truth Seeding (iNaturalist + EDDMapS)
 
-- [ ] W1-T011 [PI] Create `app/services/inat_consumer.py` — async `httpx.AsyncClient` consumer for `https://api.inaturalist.org/v1/observations`; implement exponential backoff (3 retries) on HTTP 429; log + skip on any other failure; write results to `ground_truth_observations`
-- [ ] W1-T012 [PI] Create `app/services/eddmaps_consumer.py` — same resilience contract as iNat consumer; write to `ground_truth_observations`
-- [ ] W1-T013 [P] [PI] Create `app/scripts/seed_observations.py` — CLI entry point calling both consumers for a configurable taxon list + bounding box; invoked by `just seed-data`
-- [ ] W1-T014 [P] [PI] Create `POST /api/v1/observations/sync` endpoint in `app/api/v1/observations.py` — runs the iNaturalist + EDDMapS sync for a given ROI id and returns a summary payload (`sources_polled`, `records_inserted`, `records_skipped`)
-- [ ] W1-T015 [P] [PI] Unit test `tests/unit/test_inat_consumer.py` — mock HTTP 429 response; assert backoff is applied and third retry succeeds; assert failure after max retries logs and does not raise
-- [ ] W1-T016 [P] [PI] Unit test `tests/unit/test_eddmaps_consumer.py` — same backoff contract test
+- [x] W1-T011 [PI] Create `app/services/inat_consumer.py` — async `httpx.AsyncClient` consumer for `https://api.inaturalist.org/v1/observations`; implement exponential backoff (3 retries) on HTTP 429; log + skip on any other failure; write results to `ground_truth_observations`
+- [x] W1-T012 [PI] Create `app/services/eddmaps_consumer.py` — same resilience contract as iNat consumer; write to `ground_truth_observations`
+- [x] W1-T013 [P] [PI] Create `app/scripts/seed_observations.py` — CLI entry point calling both consumers for a configurable taxon list + bounding box; invoked by `just seed-data`
+- [x] W1-T014 [P] [PI] Create `POST /api/v1/observations/sync` endpoint in `app/api/v1/observations.py` — runs the iNaturalist + EDDMapS sync for a given ROI id and returns a summary payload (`sources_polled`, `records_inserted`, `records_skipped`)
+- [x] W1-T015 [P] [PI] Unit test `tests/unit/test_inat_consumer.py` — mock HTTP 429 response; assert backoff is applied and third retry succeeds; assert failure after max retries logs and does not raise
+- [x] W1-T016 [P] [PI] Unit test `tests/unit/test_eddmaps_consumer.py` — same backoff contract test
 
 **Checkpoint ✓**: `just db-migrate` creates four tables; `just seed-data` inserts ≥ 1 observation row; `POST /api/v1/rois` returns 201 with GeoJSON.
+
+**Phase 6 hardening ✓**: Added schema contract integration assertions, deterministic retry schedules with jitter policy constants, timeout-safe partial sync behavior, sync-run audit logging, and dry-run command exposure (`just seed-data-dry-run`); `just verify` remains green.
+
+**Research preflight note**: `just research-sync` reaches the NotebookLM authentication gate and requires manual Google login in the interactive browser before `just research-test` can complete in-session.
 
 ---
 
@@ -213,8 +217,8 @@ Wave 0 (Bootstrap)
 
 | Wave | Status | Blocking? |
 |:---|:---|:---|
-| Wave 0 — Bootstrap | 🟡 In Progress (grounding complete, runtime bootstrap pending) | Blocks all |
-| Wave 1 — Pillar I | ⬜ Not started | Blocks Wave 2+ |
+| Wave 0 — Bootstrap | ✅ Complete | Blocks all |
+| Wave 1 — Pillar I | ✅ Complete (schema, ROI API, sync API, seeding + tests validated) | Blocks Wave 2+ |
 | Wave 2 — Pillar II | ⬜ Not started | Blocks Wave 3+ |
 | Wave 3 — Pillar III | ⬜ Not started | Blocks Wave 4+ |
 | Wave 4 — Pillar IV | ⬜ Not started | Blocks Wave 5 |

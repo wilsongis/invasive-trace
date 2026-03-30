@@ -113,6 +113,12 @@ seed-data:
     uv run python -m app.scripts.seed_observations
     @echo "✅ Seed complete."
 
+# Dry-run seed workflow (fetch + summary, no DB writes)
+seed-data-dry-run:
+    @echo "🌱 Dry-run seeding ground-truth observations..."
+    uv run python -m app.scripts.seed_observations --dry-run
+    @echo "✅ Dry-run seed complete."
+
 # Verify standard: run linters, formatters, and tests
 verify: lint test
     @echo "✅ Verification complete! Environment is fully compliant."

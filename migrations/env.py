@@ -13,6 +13,13 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.config import get_settings  # noqa: E402
+from app.models import (  # noqa: F401, E402
+    Base,  # noqa: E402
+    observation,
+    prediction,
+    roi,
+    spectral,
+)
 
 # Alembic Config object — provides access to the .ini file values.
 config = context.config
@@ -25,8 +32,8 @@ if config.config_file_name is not None:
 _settings = get_settings()
 config.set_main_option("sqlalchemy.url", _settings.DATABASE_URL)
 
-# target_metadata is None until Wave 1 ORM models are wired in.
-target_metadata = None
+# Use ORM metadata for migration autogeneration.
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

@@ -37,15 +37,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 RUN mkdir -p /app/docs/research && chown -R appuser:appgroup /app
 
-# Copy the virtual environment from builder
+# Copy application code
+COPY --chown=appuser:appgroup . .
+
+# Copy the Linux virtual environment from builder after source copy so it cannot be
+# overwritten by host build-context artifacts.
 COPY --from=builder --chown=appuser:appgroup /app/.venv /app/.venv
 
 # Set environment paths
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
-
-# Copy application code
-COPY --chown=appuser:appgroup . .
 
 USER appuser
 

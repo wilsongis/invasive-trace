@@ -1,23 +1,18 @@
 <!--
 Sync Impact Report:
-- Version change: 2.0.1 -> 2.0.2
+- Version change: 2.0.2 -> 2.1.0
 - List of modified principles:
-  - I. Research-First Protocol -> I. Remote-Sensing & Research-First Protocol
-  - II. The Agent Memory Protocol -> II. The Anti-Context Rot Protocol (Read-Execute-Write)
-  - III. Global Tech Stack (NON-NEGOTIABLE) -> III. Global Tech Stack (NON-NEGOTIABLE) [expanded]
-  - IV. Universal Command Bridge -> IV. Spatial Data Integrity Contract [replaced]
-  - V. Containerized Environment -> V. Resilient-by-Default External API Consumers [replaced]
-  - [NEW] VI. ML Model Registry Governance
-- Added sections: VI. ML Model Registry Governance (new principle)
-- Removed sections: IV. Universal Command Bridge, V. Containerized Environment (merged into III / Additional Constraints)
+  - I. Remote-Sensing & Research-First Protocol [expanded for benchmark-only foundation-model research]
+  - III. Global Tech Stack (NON-NEGOTIABLE) [clarified Planetary Computer production baseline]
+  - V. Resilient-by-Default External API Consumers [expanded to cover approved benchmark sources]
+  - [NEW] VII. Experimental Foundation-Model Benchmark Gate
+- Added sections: VII. Experimental Foundation-Model Benchmark Gate
+- Removed sections: none
 - Templates requiring updates:
-  - .specify/templates/plan-template.md ✅ updated (Technical Context locked to stack; Constitution Check gates explicit; Source Code layout uses app/)
-  - .specify/templates/spec-template.md ✅ updated (Key Entities references canonical tables; edge cases include API/raster failures; FR prompts include spatial/resilience requirements)
-  - .specify/templates/tasks-template.md ✅ updated (Phase 2 uses Alembic/PostGIS/async foundation tasks; Path Conventions use app/ layout)
+  - none; existing templates remain valid because the amendment adds a feature-scoped benchmark gate rather than changing the default delivery workflow
 - Follow-up TODOs:
-  - ✅ NotebookLM Notebook ID connected: "gaia-atlas" (b22e0bd5-8d0b-4173-a447-2b2442430d6e)
-  - ✅ Grounding fixes applied for review-state semantics, spectral band contract, and prediction lineage
-  - ✅ Added explicit operational health-endpoint exception to API versioning rule
+  - Add benchmark planning artifacts under `specs/003-alphaearth-benchmark/`
+  - Record benchmark evidence before proposing any production pipeline promotion
 -->
 # Invasive Trace Constitution
 
@@ -31,7 +26,9 @@ the Dev notebook only; run `just research-sync` to initialize the MCP connection
 `just research-test` to verify it, and upload local research sources through the
 NotebookLM UI before beginning any new pillar of work. Promotion to the Prod notebook
 is ONLY permitted once an SRS pillar has been declared finalized and its Success
-Criteria verified.
+Criteria verified. Foundation-model or embedding-based remote sensing experiments
+MUST be treated as benchmark research until they satisfy the benchmark gate in
+Principle VII.
 
 **Rationale:** Multi-temporal spectral analysis and ecological ML are high-complexity
 domains where undocumented assumptions propagate silently. Anchoring every decision
@@ -68,7 +65,7 @@ an explicit decision recorded in `AGENTS.md` and a constitution amendment.
 | ORM / Spatial | SQLAlchemy (async) + GeoAlchemy2 | No raw psycopg2 geometry strings |
 | Frontend | Jinja2 + HTMX + Tailwind CSS | No React, Vue, Svelte |
 | Raster I/O | Rasterio + GDAL (via Containerfile) | COG-native reads only |
-| Remote Sensing | pystac-client + planetary-computer | STAC v1 catalog queries only |
+| Remote Sensing | pystac-client + planetary-computer | Planetary Computer STAC is the production baseline |
 | ML: Classical | Scikit-learn (RandomForest / XGBoost) | No model zoo shortcuts |
 | ML: Deep | PyTorch (U-Net architecture) | No TensorFlow / Keras |
 | Container | Podman + Containerfile | No Docker Desktop |
@@ -112,7 +109,8 @@ breaks downstream ML feature vectors. A contract lock makes every schema change 
 deliberate, reviewed act rather than an accidental migration.
 
 ### V. Resilient-by-Default External API Consumers
-All code that calls Planetary Computer, iNaturalist, EDDMapS, or USGS 3DEP MUST
+All code that calls Planetary Computer, iNaturalist, EDDMapS, USGS 3DEP, or any
+constitution-approved benchmark source such as Google Earth Engine MUST
 implement the following failure-handling contract — no exceptions:
 
 1. **Rate limiting (HTTP 429):** Exponential backoff with a maximum of 3 retries.
@@ -126,6 +124,10 @@ implement the following failure-handling contract — no exceptions:
 4. **Band contract:** Sentinel-2 spectral work MUST use B08/B04 for NDVI, B08/B04/B03
   for ENDVI, and the red-edge bands (B05/B8A as required by the chosen formula)
   for red-edge metrics. Band selections MUST be documented in research artifacts.
+5. **Benchmark-source failures:** Auth failures, missing annual coverage, requester-pays
+   export failures, or quota errors from an approved benchmark source MUST be logged
+   and treated as skipped benchmark runs. They MUST NOT block or degrade the
+   production Planetary Computer workflow.
 
 No external-API-facing function may propagate an unhandled exception to the FastAPI
 request lifecycle. All API keys MUST be sourced from environment variables
@@ -159,6 +161,31 @@ Rules:
 
 **Rationale:** Untracked model versions make audit trails impossible and break the
 Southern Grassland Institute's scientific reproducibility requirements.
+
+### VII. Experimental Foundation-Model Benchmark Gate
+AlphaEarth Foundations or any similar foundation-model embedding source MAY be used
+only for explicitly scoped benchmark work and MUST comply with all of the following:
+
+1. **Benchmark-only scope:** The source may augment or replace Stage 2 benchmark
+  features for comparison purposes, but MUST NOT replace the production Stage 1
+  anomaly detector, Planetary Computer scene-ingestion flow, or production Stage 2
+  feature vector by default.
+2. **Matched comparisons:** Every benchmark run MUST compare against the current
+  registered baseline (`rf-v0.1.0`) on identical ROI, label set, and train/test
+  split definitions.
+3. **Decision evidence:** Precision, recall, F1, runtime, dependency burden,
+  auth complexity, and data-coverage findings MUST be recorded in feature artifacts
+  or `/docs/research/` before any promotion decision is proposed.
+4. **Temporal-fit restriction:** Annual embeddings MUST NOT be used for Stage 1
+  temporal anomaly detection or cloud-masking logic without a separate constitution
+  amendment that explicitly approves a new design.
+5. **Non-blocking behavior:** Benchmark failures MUST exit cleanly, preserve the
+  current production baseline, and leave existing roadmap work unblocked.
+
+**Rationale:** Foundation models can improve species classification, but annual,
+externally hosted embeddings introduce operability, coverage, and scientific-fit
+risks. A benchmark gate permits evaluation without silently replacing the
+project's phenology-sensitive baseline architecture.
 
 ## Additional Constraints
 
@@ -198,4 +225,4 @@ All pull requests and agent task sessions MUST verify compliance with the Global
 Stack (Section III), the Spatial Data Integrity Contract (Section IV), and the
 Anti-Context Rot Protocol (Section II) before marking work complete.
 
-**Version**: 2.0.2 | **Ratified**: 2026-03-27 | **Last Amended**: 2026-03-27
+**Version**: 2.1.0 | **Ratified**: 2026-03-27 | **Last Amended**: 2026-03-27

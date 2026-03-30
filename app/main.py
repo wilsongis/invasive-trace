@@ -29,6 +29,17 @@ app = FastAPI(
 app.include_router(v1_router, prefix="/api/v1")
 
 
+@app.get("/", tags=["ops"])
+async def root() -> dict[str, str]:
+    """Service root endpoint for local startup validation."""
+    return {
+        "status": "ok",
+        "health": "/healthz",
+        "api": "/api/v1/",
+        "docs": "/docs",
+    }
+
+
 @app.get("/healthz", tags=["ops"])
 async def health_check() -> dict[str, Any]:
     """Liveness probe — returns 200 with status ok when the app is running."""

@@ -1,5 +1,17 @@
-"""Bootstrap API v1 router — minimal wiring; domain endpoints added in Wave 1."""
+"""API v1 router wiring for Wave 1 endpoints."""
 
 from fastapi import APIRouter
 
+from app.api.v1.observations import router as observations_router
+from app.api.v1.rois import router as rois_router
+
 router = APIRouter()
+
+router.include_router(rois_router)
+router.include_router(observations_router)
+
+
+@router.get("/")
+async def v1_root() -> dict[str, str]:
+    """Simple API v1 root endpoint."""
+    return {"status": "ok", "version": "v1"}

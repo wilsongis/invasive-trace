@@ -44,7 +44,8 @@ services:
       dockerfile: Containerfile
     container_name: invasive-trace-app
     restart: unless-stopped
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    working_dir: /workspace
+    command: ["/app/.venv/bin/python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/workspace/app"]
     environment:
       # Database connection — matches db service above
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-appuser}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-invasive_trace}
@@ -57,13 +58,14 @@ services:
       # Runtime settings
       PYTHONUNBUFFERED: "1"
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      PYTHONPATH: /workspace
     ports:
       - "8000:8000"
     volumes:
-      # Live-reload source mount for development; remove for production
-      - .:/app:z
+      # Live-reload source mount for development; keep it separate from the packaged runtime
+      - .:/workspace:z
       # Persist trained model artifacts across container restarts
-      - model_artifacts:/app/models
+      - model_artifacts:/workspace/models
     depends_on:
       db:
         condition: service_healthy

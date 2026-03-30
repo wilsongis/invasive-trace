@@ -1,5 +1,5 @@
 {
-  "headless": true,
+  "headless": false,
   "debug": false,
   "timeout": 60,
   "default_notebook_id": "b22e0bd5-8d0b-4173-a447-2b2442430d6e",

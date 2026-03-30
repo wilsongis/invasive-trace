@@ -30,7 +30,7 @@
 | **ORM / Spatial** | SQLAlchemy (async) + GeoAlchemy2 | Strictly typed geometries |
 | **Frontend** | Jinja2 + HTMX + Tailwind CSS | No React/Vue/Svelte |
 | **Raster I/O** | Rasterio + GDAL (via Containerfile) | COG-native reads only |
-| **Remote Sensing** | pystac-client + planetary-computer | Planetary Computer STAC endpoint |
+| **Remote Sensing** | pystac-client + planetary-computer; Google Earth Engine AlphaEarth embeddings (benchmark-only) | Planetary Computer STAC remains the production baseline |
 | **ML: Classical** | Scikit-learn (RandomForest / XGBoost) | Spectral feature vectors |
 | **ML: Deep** | PyTorch (U-Net architecture) | Spatial texture classification |
 | **Package Mgr** | `uv` (strictly) | No pip/poetry |
@@ -117,6 +117,7 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 | Service | Endpoint | Auth | Usage |
 | :--- | :--- | :--- | :--- |
 | **Microsoft Planetary Computer** | `https://planetarycomputer.microsoft.com/api/stac/v1` | Token (planetary-computer lib) | Sentinel-2 L2A, Landsat HLS, NAIP queries |
+| **Google Earth Engine / AlphaEarth** | `https://earthengine.googleapis.com/` | Google Cloud / Earth Engine auth; requester-pays GCS if export path is used | Benchmark-only annual embedding access for `GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL` |
 | **iNaturalist** | `https://api.inaturalist.org/v1/observations` | API Key (env: `INAT_API_KEY`) | Ground truth seeding; taxon filter by invasive list |
 | **EDDMapS** | `https://www.eddmaps.org/api/` | API Key (env: `EDDMAPS_API_KEY`) | Regional occurrence records |
 | **USGS 3DEP** | `https://tnmapi.cr.usgs.gov/api/` | None (public) | Elevation context for topographic modelling |
@@ -125,6 +126,8 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - HTTP 429 (rate limit): exponential backoff, max 3 retries
 - Missing tiles / partial STAC results: log and skip, never raise unhandled
 - Cloud-masked scenes (`cloud_cover > 0.20`): mark `is_masked=TRUE`, exclude from index computation
+- AlphaEarth auth, coverage, or export failures: log and skip the benchmark run; never block the Planetary Computer baseline workflow
+- AlphaEarth annual embeddings MUST NOT be used for Stage 1 temporal anomaly detection unless a separate architecture amendment explicitly approves it
 
 **Sentinel-2 band contract for spectral work:**
 - NDVI: B08 (NIR) + B04 (Red)
@@ -140,10 +143,13 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 | **Stage 1** | `AnomalyDetector` (IsolationForest / Z-score on NDVI) | `anomaly-v0.1.0` | Temporal green-up departure detection | Planned |
 | **Stage 2** | `FocalClassifier` (RandomForest / XGBoost) | `rf-v0.1.0` | Species-level spectral discrimination | Planned |
 | **Stage 3** | `UNetTexture` (PyTorch U-Net, 512×512 patches) | `unet-v0.1.0` | Spatial texture → hotspot scoring | Planned |
+| **Wave 1.5 Benchmark** | `AlphaEarthStage2Benchmark` (RandomForest / XGBoost + annual 64D embeddings) | `alphaearth-benchmark-v0.1.0` | Experimental comparison against the Stage 2 baseline | Proposed |
 
 **Model artifact path:** `./models/{model_name}/{version}/`
 **Retraining trigger:** HITL feedback batch ≥ 50 validated/rejected predictions
 **Prediction lineage rule:** `invasion_predictions.model_version` stores the Stage 2 classifier version (`rf-v0.1.0` for the current registry). Stage 1 and Stage 3 versions must be captured in logs or sidecar metadata, but not in the `model_version` column.
+
+**Benchmark rule:** AlphaEarth embeddings are permitted only as Wave 1.5 benchmark inputs for Stage 2 comparison work. They MUST NOT replace the Stage 1 NDVI anomaly path, the Planetary Computer scene-ingestion flow, or the production Stage 2 feature vector until benchmark evidence is accepted and both `AGENTS.md` and the constitution are amended again.
 
 ---
 
@@ -191,6 +197,12 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] Add Wave 0 planning artifacts: `research.md`, `data-model.md`, `quickstart.md`
 - [x] Generate Wave 0 executable task list in `specs/archive/002-wave0-environment-bootstrap/tasks.md`
 - [x] Wave 0 implementation complete — bootstrap runtime, async DB layer, Alembic baseline, `/healthz`, quality gate passed (ruff clean, 8/8 non-integration tests pass)
+- [x] Specify Wave 1.5 AlphaEarth benchmark gate in `specs/003-alphaearth-benchmark/spec.md`
+- [x] Draft Wave 1.5 implementation plan in `specs/003-alphaearth-benchmark/plan.md`
+- [x] Generate Wave 1.5 executable task list in `specs/003-alphaearth-benchmark/tasks.md`
+- [x] Specify Wave 1 spatial infrastructure gate in `specs/004-wave1-spatial-infrastructure-seeding/spec.md`
+- [x] Draft Wave 1 implementation plan in `specs/004-wave1-spatial-infrastructure-seeding/plan.md`
+- [x] Generate Wave 1 executable task list in `specs/004-wave1-spatial-infrastructure-seeding/tasks.md`
 
 ### Completed — Pillar I Bootstrap (Wave 0)
 - [x] Scaffold FastAPI app structure: `app/api/`, `app/models/`, `app/services/`
@@ -199,10 +211,23 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] `app/main.py` — FastAPI with lifespan, `/healthz`, bootstrap v1 router
 - [x] `alembic.ini` + `migrations/env.py` — async Alembic wired to runtime `DATABASE_URL`
 - [x] `migrations/versions/0001_baseline.py` — Wave 0 baseline revision (no domain tables)
+- [x] Compose dev startup hardened so bind-mounted source no longer masks or overwrites the image-built Linux virtualenv; root endpoint now responds at `/` for local validation
 
 ### In Progress — Pillar I: Spatial Infrastructure (Wave 1)
-- [ ] Implement Alembic migration for all four PostGIS tables
-- [ ] Seed endpoint: `POST /api/v1/observations/sync` (iNaturalist + EDDMapS)
+- [x] Implement Alembic migration for all four PostGIS tables
+- [x] Seed endpoint: `POST /api/v1/observations/sync` (iNaturalist + EDDMapS)
+- [x] Implement canonical ORM models for `regions_of_interest`, `invasion_predictions`, `ground_truth_observations`, and `spectral_time_series`
+- [x] Implement ROI API endpoints: `POST /api/v1/rois`, `GET /api/v1/rois/{id}`, `GET /api/v1/rois`
+- [x] Implement source consumers and seed entrypoint: `app/services/inat_consumer.py`, `app/services/eddmaps_consumer.py`, `app/scripts/seed_observations.py`
+- [x] Add Wave 1 API and consumer tests: ROI schema/unit tests, ROI integration tests, observation sync integration tests, retry unit tests
+- [x] Complete Phase 6 hardening pass: canonical schema contract integration assertions, retry policy constants with jitter/budget, timeout-safe partial sync handling, sync-run audit logging, deterministic retry test schedules, and `just seed-data-dry-run`
+- [ ] Research preflight strict closure (`just research-sync` + `just research-test`) requires manual Google login in NotebookLM browser flow
+
+### Proposed — Wave 1.5: AlphaEarth Benchmark Spike
+- [x] Author benchmark plan/tasks for `specs/003-alphaearth-benchmark/`
+- [ ] Validate Earth Engine access and annual ROI/year coverage for `GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL`
+- [ ] Compare `rf-v0.1.0` baseline features against `alphaearth-benchmark-v0.1.0` on identical train/test splits
+- [ ] Record go/no-go recommendation before any production pipeline change is proposed
 
 ### Backlog — Pillar II: Remote Sensing
 - [ ] Planetary Computer STAC query service (`app/services/stac_client.py`)
@@ -220,4 +245,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Retraining trigger: batch feedback collection
 
 ---
-⏱️ **State:** Wave 0 Implemented | 🧠 **Memory:** Updated v1.1 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 Implemented; Wave 1 spatial infrastructure + seeding + Phase 6 hardening implemented and verified (`just verify` green); compose startup fixed for bind-mounted dev runs, host `.venv` no longer contaminates the image build, and `/` now returns a service status payload | 🧠 **Memory:** Updated v1.4 | 🛠️ **Platform:** Podman / macOS Universal
