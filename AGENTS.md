@@ -260,4 +260,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Retraining trigger: batch feedback collection
 
 ---
-⏱️ **State:** Wave 0 + Wave 1 complete; Pillar II Remote Sensing **implementation complete except global verify blocker** — spec 005 code/migration/tests delivered on branch `005-pillar2-remote-sensing`; focused spec tests pass; full `just verify` currently blocked by pre-existing `tests/integration/test_healthz.py` route-surface expectation for `/` | 🧠 **Memory:** Updated v1.7 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 + Wave 1 complete; Pillar II Remote Sensing implementation complete and verified — all 40 tests passing | 🧠 **Memory:** Updated v1.8 | 🛠️ **Platform:** Podman / macOS Universal

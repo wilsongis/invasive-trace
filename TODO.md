@@ -95,20 +95,20 @@ updated: 2026-03-27
 
 ### Phase 2A — STAC Client
 
-- [ ] W2-T001 [PII] Create `app/services/stac_client.py` — async `pystac_client.Client` wrapper for `https://planetarycomputer.microsoft.com/api/stac/v1`; accepts ROI geometry + date range; uses `planetary_computer.sign_inplace` for token refresh; implements graceful skip on missing tiles (log WARN, continue); returns list of valid STAC item hrefs
-- [ ] W2-T002 [P] [PII] Unit test `tests/unit/test_stac_client.py` — mock pystac search returning 0 items; assert empty list returned (no exception); mock partial result; assert partial items returned
-- [ ] W2-T003 [P] [PII] Integration test `tests/integration/test_stac_query.py` — live query for a known SGI bounding box + recent date range; assert ≥ 1 item returned with `cloud_cover` field present
+- [x] W2-T001 [PII] Create `app/services/stac_client.py` — async `pystac_client.Client` wrapper for `https://planetarycomputer.microsoft.com/api/stac/v1`; accepts ROI geometry + date range; uses `planetary_computer.sign_inplace` for token refresh; implements graceful skip on missing tiles (log WARN, continue); returns list of valid STAC item hrefs
+- [x] W2-T002 [P] [PII] Unit test `tests/unit/test_stac_client.py` — mock pystac search returning 0 items; assert empty list returned (no exception); mock partial result; assert partial items returned
+- [x] W2-T003 [P] [PII] Integration test `tests/integration/test_stac_query.py` — live query for a known SGI bounding box + recent date range; assert ≥ 1 item returned with `cloud_cover` field present
 
 ### Phase 2B — Spectral Index Calculator
 
-- [ ] W2-T004 [PII] Create `app/services/indices.py` — pure functions `compute_ndvi(nir, red)`, `compute_endvi(nir, red, green)`, `compute_red_edge(red_edge_nir, red_edge_red)` — all return `float | None`; raise `ValueError` for mismatched array shapes
-- [ ] W2-T005 [P] [PII] Unit test `tests/unit/test_indices.py` — known band values → expected index values (e.g., NDVI = (0.8−0.2)/(0.8+0.2) = 0.6); test None for all-zero denominator
+- [x] W2-T004 [PII] Create `app/services/indices.py` — pure functions `compute_ndvi(nir, red)`, `compute_endvi(nir, red, green)`, `compute_red_edge(red_edge_nir, red_edge_red)` — all return `float | None`; raise `ValueError` for mismatched array shapes
+- [x] W2-T005 [P] [PII] Unit test `tests/unit/test_indices.py` — known band values → expected index values (e.g., NDVI = (0.8−0.2)/(0.8+0.2) = 0.6); test None for all-zero denominator
 
 ### Phase 2C — Cloud Masking & Ingestion Pipeline
 
-- [ ] W2-T006 [PII] Create `app/services/scene_ingestor.py` — orchestrates: fetch scene via `stac_client`; read COG bands B03 (Green), B04 (Red), B05/B8A (Red-edge), and B08 (NIR) via `rasterio`; compute NDVI, ENDVI, and the chosen red-edge metric; if `cloud_cover > 0.20` persist `is_masked=TRUE` and skip index computation; otherwise persist all three index values to `spectral_time_series`
-- [ ] W2-T007 [P] [PII] Create `POST /api/v1/rois/{id}/scenes/ingest` endpoint in `app/api/v1/scenes.py` — accepts `start_date`, `end_date`, triggers `scene_ingestor` for the ROI; returns count of scenes ingested and masked
-- [ ] W2-T008 [P] [PII] Unit test `tests/unit/test_scene_ingestor.py` — mock scene with `cloud_cover=0.35`; assert `is_masked=TRUE` persisted and indices are NULL; mock scene `cloud_cover=0.05`; assert indices populated
+- [x] W2-T006 [PII] Create `app/services/scene_ingestor.py` — orchestrates: fetch scene via `stac_client`; read COG bands B03 (Green), B04 (Red), B05/B8A (Red-edge), and B08 (NIR) via `rasterio`; compute NDVI, ENDVI, and the chosen red-edge metric; if `cloud_cover > 0.20` persist `is_masked=TRUE` and skip index computation; otherwise persist all three index values to `spectral_time_series`
+- [x] W2-T007 [P] [PII] Create `POST /api/v1/rois/{id}/scenes/ingest` endpoint in `app/api/v1/scenes.py` — accepts `start_date`, `end_date`, triggers `scene_ingestor` for the ROI; returns count of scenes ingested and masked
+- [x] W2-T008 [P] [PII] Unit test `tests/unit/test_scene_ingestor.py` — mock scene with `cloud_cover=0.35`; assert `is_masked=TRUE` persisted and indices are NULL; mock scene `cloud_cover=0.05`; assert indices populated
 
 **Checkpoint ✓**: `POST /api/v1/rois/{id}/scenes/ingest` populates `spectral_time_series` rows; cloud-masked scenes have `is_masked=TRUE` and NULL indices.
 
@@ -219,7 +219,7 @@ Wave 0 (Bootstrap)
 |:---|:---|:---|
 | Wave 0 — Bootstrap | ✅ Complete | Blocks all |
 | Wave 1 — Pillar I | ✅ Complete (schema, ROI API, sync API, seeding + tests validated) | Blocks Wave 2+ |
-| Wave 2 — Pillar II | ⬜ Not started | Blocks Wave 3+ |
+| Wave 2 — Pillar II | ✅ Complete (spec005 delivered, all 40 tests passing) | Blocks Wave 3+ |
 | Wave 3 — Pillar III | ⬜ Not started | Blocks Wave 4+ |
 | Wave 4 — Pillar IV | ⬜ Not started | Blocks Wave 5 |
 | Wave 5 — Polish | ⬜ Not started | — |
