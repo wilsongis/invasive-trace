@@ -230,7 +230,13 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Record go/no-go recommendation before any production pipeline change is proposed
 
 ### Backlog — Pillar II: Remote Sensing
-### Active — Pillar II: Remote Sensing (spec 005)
+### Active — Pillar III: AI Execution Chain (spec 007)
+- [x] Author `specs/007-wave3-ai-chain/spec.md` — feature specification artifact completed
+- [x] Author `specs/007-wave3-ai-chain/plan.md` — full implementation plan (Phases 3A–3D)
+- [x] Author `specs/007-wave3-ai-chain/tasks.md` — executable task list (W3-T001 through W3-T013)
+- [ ] Create feature branch `007-wave3-ai-chain`
+
+### Completed — Pillar II: Remote Sensing (spec 005)
 - [x] Author `specs/005-pillar2-remote-sensing/spec.md` — feature specification artifact completed
 - [x] Author `specs/005-pillar2-remote-sensing/plan.md` — full implementation plan (Phases 0–6)
 - [x] Author `specs/005-pillar2-remote-sensing/research.md` — STAC client, index formula, cloud-mask decisions
@@ -260,4 +266,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Retraining trigger: batch feedback collection
 
 ---
-⏱️ **State:** Wave 0 + Wave 1 complete; Pillar II Remote Sensing implementation complete and verified — all 40 tests passing | 🧠 **Memory:** Updated v1.8 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 + Wave 1 complete; Pillar II Remote Sensing complete (40 tests passing); Wave 3 AI Execution Chain spec + plan + tasks authored (spec 007) | 🧠 **Memory:** Updated v2.1 | 🛠️ **Platform:** Podman / macOS Universal
