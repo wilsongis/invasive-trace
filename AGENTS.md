@@ -232,9 +232,12 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 ### Backlog — Pillar II: Remote Sensing
 ### Active — Pillar III: AI Execution Chain (spec 007)
 - [x] Author `specs/007-wave3-ai-chain/spec.md` — feature specification artifact completed
-- [x] Author `specs/007-wave3-ai-chain/plan.md` — full implementation plan (Phases 3A–3D)
-- [x] Author `specs/007-wave3-ai-chain/tasks.md` — executable task list (W3-T001 through W3-T013)
-- [ ] Create feature branch `007-wave3-ai-chain`
+- [x] Author `specs/007-wave3-ai-chain/plan.md` — full implementation plan (Phase 0 and Phases 3A–3D)
+- [x] Author `specs/007-wave3-ai-chain/tasks.md` — executable task list (W3-T001 through W3-T016)
+- [x] Tighten `specs/007-wave3-ai-chain/spec.md`, `plan.md`, and `tasks.md` to lock zero-result `message` responses, `validated` filter semantics, deterministic ROI-centroid detection points, 512x512 patch extraction, training-artifact coverage, lineage metadata capture, and research-preflight execution work
+- [x] Create feature branch `007-wave3-ai-chain`
+- [x] Implement Wave 3 runtime + API + tests (`app/ml/`, `app/services/`, `app/api/v1/`, `app/schemas/`, `app/scripts/`, `tests/`) including deterministic centroid detection, Stage 3 STAC patch extraction, and resilient fallback behavior
+- [x] Run full quality gate via `just verify` (ruff clean; pytest 103 passed, 2 skipped)
 
 ### Completed — Pillar II: Remote Sensing (spec 005)
 - [x] Author `specs/005-pillar2-remote-sensing/spec.md` — feature specification artifact completed
@@ -266,4 +269,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Retraining trigger: batch feedback collection
 
 ---
-⏱️ **State:** Wave 0 + Wave 1 complete; Pillar II Remote Sensing complete (40 tests passing); Wave 3 AI Execution Chain spec + plan + tasks authored (spec 007) | 🧠 **Memory:** Updated v2.1 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 + Wave 1 complete; Pillar II Remote Sensing complete; Wave 3 AI Execution Chain implemented on branch `007-wave3-ai-chain` with deterministic centroid detection, Stage 3 STAC patch extraction (B04/B08/B03/B05 at 10m), pipeline trigger and prediction GeoJSON APIs, and resilience/fallback coverage; quality gate passing (`just verify`: ruff clean, pytest 103 passed/2 skipped) | 🧠 **Memory:** Updated v2.4 | 🛠️ **Platform:** Podman / macOS Universal

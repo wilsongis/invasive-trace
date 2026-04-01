@@ -102,6 +102,28 @@ tests/
 
 **Structure Decision**: Wave 3 introduces explicit ML stage wrappers under `app/ml/`, orchestration and external client logic under `app/services/`, and thin API routers under `app/api/v1/`. Existing ORM models remain unchanged and no migrations are created.
 
+**Contract Amendments Applied During Planning Review**:
+- Zero-result pipeline responses include a required `message` field so the API contract is testable.
+- `validated` filtering is fixed to `true` = confirmed, `false` = rejected, omitted = no validated-state filter including pending rows.
+- Wave 3 uses a deterministic detection point: ROI centroid in SRID 4326, with a 512x512 Stage 3 patch centered on that point for the anomalous scene date.
+- Training scripts are in scope as executable deliverables and must produce artifacts loadable by the runtime wrappers.
+- Stage 1 and Stage 3 lineage are captured in structured logs and a per-run sidecar metadata payload.
+
+### Phase 0 - Research Preflight
+
+**Goal**: Satisfy the constitution's research-first gate before implementation work begins.
+
+**Files**:
+- `AGENTS.md` (implementation notes only; no schema/API contract changes)
+
+**Tasks**:
+- Execute `just research-sync`.
+- Execute `just research-test`.
+- Record the result and any manual-login blocker in implementation notes before coding starts.
+
+**Exit Criteria**:
+- Research-first gate status is documented before runtime work begins.
+
 ## Implementation Phases (Wave 3)
 
 ### Phase 3A - Model Runtime and Artifact Contracts
@@ -121,15 +143,20 @@ tests/
   - `models/AnomalyDetector/anomaly-v0.1.0/model.joblib`
   - `models/FocalClassifier/rf-v0.1.0/model.joblib`
   - `models/UNetTexture/unet-v0.1.0/model.pt`
-- Implement eager artifact existence checks with clear exceptions before inference starts.
+- Implement `app/scripts/train_anomaly.py` and `app/scripts/train_classifier.py` so they produce artifacts that the runtime wrappers can load without format translation.
+- Implement eager artifact existence checks with clear exceptions before inference starts; a missing artifact MUST raise a deterministic error before any DB write occurs — no silent data failures.
 - Implement confidence/hotspot clamp utility in `ml_runtime.py` to enforce [0.0, 1.0].
-- Stage 1 input contract: unmasked NDVI only (`is_masked=FALSE`) ordered by `scene_date`.
-- Stage 2 output contract: `(species_label, confidence)` with non-empty species and clamped confidence.
+- Stage 1 implements `fit(roi_id, season_start, season_end)`, `predict(roi_id)`, and `load()`. Input contract: unmasked NDVI only (`is_masked=FALSE`) ordered by `scene_date`.
+- Stage 2 implements `fit(X, y)`, `predict(X)`, and `load()`. Output contract: `(species_label, confidence)` with non-empty species and clamped confidence.
+- Stage 3 implements `load()` and `infer(patch_tensor)`. Training-artifact generation for Stage 3 is out of scope for Wave 3 (inference-only with a pre-staged `model.pt`).
+- Stage 3 input contract: 512x512 four-channel raster patch (bands B04/B08/B03/B05, all resampled to 10m) sourced from the Planetary Computer STAC item in `spectral_time_series.stac_item` via `app/services/stac_client.py`, windowed and centered on the ROI centroid for the anomalous scene date, with deterministic padding/cropping at scene boundaries. If the STAC asset is unavailable, log failure, skip that candidate, and continue.
 - Stage 3 output contract: `hotspot_score` clamped to [0.0, 1.0].
 
 **Exit Criteria**:
-- Missing artifact raises deterministic startup/runtime error before DB writes.
-- All stage wrappers expose deterministic interfaces used by orchestrator.
+- Missing artifact raises a deterministic startup/runtime error before any DB writes occur; each stage wrapper has a test that proves this.
+- Stage 1 and Stage 2 training scripts generate registered artifacts that the runtime loaders can deserialise without format translation.
+- Stage 1 exposes `fit/predict/load`; Stage 2 exposes `fit/predict/load`; Stage 3 exposes `load/infer` — all deterministic and used by the orchestrator.
+- Stage 3 patch extraction correctly resolves STAC assets via `stac_client.py` and produces a 512x512 four-channel (B04/B08/B03/B05) tensor.
 
 ### Phase 3B - Feature Extraction and External Enrichment
 
@@ -164,16 +191,17 @@ tests/
 **Tasks**:
 - Validate ROI existence; return `404` via API layer if missing.
 - Query unmasked spectral rows for ROI; short-circuit with `predictions_created: 0` when empty.
-- Execute stage chain in strict order and record structured lineage logs for Stage 1 and Stage 3 versions.
+- Derive a deterministic detection point from `ST_Centroid(regions_of_interest.geom)` for each anomalous scene candidate.
+- Execute stage chain in strict order and record structured lineage logs plus a per-run sidecar metadata payload for Stage 1 and Stage 3 versions.
 - Persist `invasion_predictions` rows with:
   - `model_version='rf-v0.1.0'` only
   - `validated=NULL`, `validator_notes=NULL`
   - `geom` as POINT SRID 4326
 - Guarantee `confidence` and `hotspot_score` are clamped before insert.
-- Return summary payload `{roi_id, predictions_created, model_version}`.
+- Return summary payload `{roi_id, predictions_created, model_version, message}`.
 
 **Exit Criteria**:
-- Pipeline run endpoint creates records for valid ROI input and returns zero-result success when inputs are insufficient.
+- Pipeline run endpoint creates records for valid ROI input and returns zero-result success with descriptive messaging when inputs are insufficient.
 - No migration or schema alteration introduced.
 
 ### Phase 3D - Prediction Retrieval API and Hardening
@@ -214,11 +242,11 @@ tests/
 
 - `POST /api/v1/rois/{id}/pipeline/run`:
   - ROI missing -> `404`
-  - ROI with no unmasked spectral rows -> `200` + `predictions_created: 0`
+  - ROI with no unmasked spectral rows -> `200` + `predictions_created: 0` + descriptive `message`
   - ROI with qualifying data -> inserts predictions with `model_version='rf-v0.1.0'`
 - `GET /api/v1/predictions`:
   - Valid GeoJSON structure
-  - Filter behavior (`roi_id`, `validated`, `min_hotspot_score`, `species_label`)
+  - Filter behavior (`roi_id`, `validated`, `min_hotspot_score`, `species_label`) where omitted `validated` includes pending rows
   - Default descending `hotspot_score` ordering
 
 ### Quality Gates
@@ -232,16 +260,18 @@ tests/
 | Risk | Impact | Mitigation | Owner |
 | :--- | :--- | :--- | :--- |
 | Missing model artifacts at runtime (`model.joblib` / `model.pt`) | Pipeline starts but fails after partial work, risking inconsistent outputs | Enforce startup/eager artifact checks in Phase 3A and fail fast before DB writes with explicit error message and path | Wave 3 implementer |
-| Empty or fully masked spectral inputs (`is_masked=TRUE` or null vectors) | No usable features cause runtime exceptions or misleading success claims | Add deterministic short-circuit in pipeline (`predictions_created: 0`) and explicit summary messaging; unit + integration coverage for empty input paths | Wave 3 implementer |
+| Empty or fully masked spectral inputs (`is_masked=TRUE` or null vectors) | No usable features cause runtime exceptions or misleading success claims | Add deterministic short-circuit in pipeline (`predictions_created: 0`) and explicit summary `message`; unit + integration coverage for empty input paths | Wave 3 implementer |
+| Ambiguous detection-point or patch extraction rules | Different implementations could produce incompatible predictions for the same ROI | Lock Wave 3 to ROI centroid detection points and deterministic 512x512 patch extraction centered on that point; cover with service tests | Wave 3 implementer |
 | USGS 3DEP instability/rate limiting (HTTP 429, timeout, partial response) | Stage 2 feature extraction blocks prediction generation | Implement bounded exponential retry (max 3), warning logs, and fallback `elevation=0.0`; validate with dedicated unit tests and integration mocks | Wave 3 implementer |
 
 ## Execution Checklist
 
-1. Implement Phase 3A files and tests.
-2. Implement Phase 3B files and tests.
-3. Implement Phase 3C endpoint + persistence behavior and integration tests.
-4. Implement Phase 3D GeoJSON endpoint and integration tests.
-5. Run `just lint`, `just test`, and `just verify` before opening PR.
+1. Execute Phase 0 research preflight and record result.
+2. Implement Phase 3A files and tests.
+3. Implement Phase 3B files and tests.
+4. Implement Phase 3C endpoint + persistence behavior and integration tests.
+5. Implement Phase 3D GeoJSON endpoint and integration tests.
+6. Run `just lint`, `just test`, and `just verify` before opening PR.
 
 ## Complexity Tracking
 

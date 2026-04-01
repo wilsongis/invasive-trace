@@ -1,4 +1,4 @@
-"""ROI endpoints for create/list/fetch workflows."""
+"""ROI endpoints for create/list/fetch/pipeline workflows."""
 
 from __future__ import annotations
 
@@ -12,7 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_db
 from app.models.roi import RegionOfInterest
+from app.schemas.pipeline import PipelineRunResponse
 from app.schemas.roi import ROICreate, ROIResponse, parse_wkt_polygon, to_geojson_mapping
+from app.services.pipeline import ROINotFoundError, run_pipeline
 
 router = APIRouter(prefix="/rois", tags=["rois"])
 DbSession = Annotated[AsyncSession, Depends(get_db)]
@@ -84,3 +86,20 @@ async def list_rois(db: DbSession) -> list[ROIResponse]:
         )
         for roi in rows
     ]
+
+
+@router.post("/{roi_id}/pipeline/run", response_model=PipelineRunResponse)
+async def trigger_pipeline(roi_id: UUID, db: DbSession) -> PipelineRunResponse:
+    """Trigger the three-stage AI pipeline for a given ROI.
+
+    Returns a 200 with predictions_created=0 when the ROI exists but has
+    no usable spectral data or no anomalous scenes are detected.
+    Returns 404 when the ROI does not exist (FR-024).
+    """
+    try:
+        return await run_pipeline(roi_id=roi_id, db=db)
+    except ROINotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc

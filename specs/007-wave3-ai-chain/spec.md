@@ -17,13 +17,13 @@ The chain runs in strict sequence:
 2. **Stage 2 — FocalClassifier (`rf-v0.1.0`)**: Classifies anomalous pixels using a spectral feature vector (`ndvi`, `endvi`, `red_edge`, `elevation`) to produce a species label and confidence score.
 3. **Stage 3 — UNetTexture (`unet-v0.1.0`)**: Scores spatial texture of 512×512 image patches to produce a hotspot risk float in [0, 1].
 
-A pipeline orchestrator (`run_pipeline`) chains all three stages for a given ROI and writes one `InvasionPrediction` record per identified detection point.
+A pipeline orchestrator (`run_pipeline`) chains all three stages for a given ROI and writes one `InvasionPrediction` record per anomalous scene candidate. In Wave 3, the detection point for each candidate is the ROI centroid in WGS84, and the Stage 3 patch is extracted as a 512x512 raster window centered on that point for the anomalous scene date.
 
 ## Goals
 
 - Deliver a deterministic, end-to-end AI execution path from spectral time-series data to spatial prediction records.
 - Enforce model registry version semantics from `AGENTS.md` Section 6 so all artifacts are traceable.
-- Persist prediction lineage correctly: `model_version` column stores the Stage 2 classifier version (`rf-v0.1.0`); Stage 1 and Stage 3 versions are captured in structured logs or sidecar metadata.
+- Persist prediction lineage correctly: `model_version` column stores the Stage 2 classifier version (`rf-v0.1.0`); Stage 1 and Stage 3 versions are captured in structured logs and a per-run sidecar metadata payload.
 - Expose an API endpoint to trigger the full pipeline for a specified ROI and a separate endpoint to query predictions as a GeoJSON FeatureCollection.
 - Guarantee all `confidence` values satisfy the DB check constraint (0.0–1.0) and all `hotspot_score` values are in [0, 1].
 
@@ -74,7 +74,7 @@ As a maintainer, I need the pipeline to respond predictably when an ROI has no u
 **Acceptance Scenarios**:
 
 1. **Given** an ROI that does not exist, **When** the pipeline is triggered, **Then** the API returns `404` and no pipeline stages execute.
-2. **Given** an ROI that exists but has zero unmasked `spectral_time_series` rows, **When** the pipeline is triggered, **Then** the API returns `200` with `predictions_created: 0` and a descriptive message — it MUST NOT raise an unhandled exception.
+2. **Given** an ROI that exists but has zero unmasked `spectral_time_series` rows, **When** the pipeline is triggered, **Then** the API returns `200` with `predictions_created: 0` and a descriptive `message` field — it MUST NOT raise an unhandled exception.
 3. **Given** USGS 3DEP elevation lookup fails for a prediction point, **When** Stage 2 feature construction runs, **Then** the pipeline logs the failure, uses a fallback elevation of `0.0`, and continues processing the remaining points.
 
 ---
@@ -119,21 +119,24 @@ As a maintainer, I need the pipeline to respond predictably when an ROI has no u
 - **FR-015**: `UNetTexture.infer(patch_tensor)` MUST return a `hotspot_score` float in [0.0, 1.0]; values outside this range MUST be clamped before persistence.
 - **FR-016**: The `UNetTexture` model version string MUST be `unet-v0.1.0` as registered in `AGENTS.md` Section 6.
 - **FR-017**: The model artifact MUST be loaded from `models/UNetTexture/unet-v0.1.0/model.pt`.
+- **FR-017a**: Stage 3 MUST consume a 512x512 four-channel raster patch centered on the Wave 3 detection point for the anomalous scene date; if the source raster window is smaller at scene boundaries, the patch MUST be padded or cropped deterministically to preserve a 512x512 tensor.
+- **FR-017b**: The Stage 3 raster patch MUST be sourced from the Planetary Computer STAC item referenced by `spectral_time_series.stac_item` for the anomalous scene date, resolved and signed using `app/services/stac_client.py`. The four channels MUST be Sentinel-2 bands B04 (Red), B08 (NIR), B03 (Green), and B05 (Red-Edge) in that order; all channels MUST be resampled to a common 10m pixel grid before patch extraction. If the STAC asset is unavailable, the pipeline MUST log the failure, skip that candidate, and continue with remaining candidates.
 
 **Pipeline Orchestrator**
 
 - **FR-018**: The system MUST implement `run_pipeline(roi_id)` in `app/services/pipeline.py` that chains Stage 1 → Stage 2 → Stage 3 in strict order for a given ROI.
 - **FR-019**: `run_pipeline` MUST write one `InvasionPrediction` row per detected prediction point with all required columns: `roi_id`, `species_label`, `confidence`, `hotspot_score`, `geom` (POINT, SRID 4326), `model_version`, `predicted_at`, `validated=NULL`, `validator_notes=NULL`.
-- **FR-020**: `model_version` in `invasion_predictions` MUST store the Stage 2 classifier version string (`rf-v0.1.0`); Stage 1 and Stage 3 versions MUST be emitted to structured logs or a sidecar metadata file but MUST NOT be written to `model_version`.
-- **FR-021**: `run_pipeline` MUST return a summary including `roi_id`, `predictions_created`, and `model_version`.
+- **FR-020**: `model_version` in `invasion_predictions` MUST store the Stage 2 classifier version string (`rf-v0.1.0`); Stage 1 and Stage 3 versions MUST be emitted to structured logs and included in a per-run sidecar metadata payload, but MUST NOT be written to `model_version`.
+- **FR-021**: `run_pipeline` MUST return a summary including `roi_id`, `predictions_created`, `model_version`, and `message`.
 - **FR-022**: When an ROI has zero unmasked spectral rows, `run_pipeline` MUST return `predictions_created: 0` without raising an exception.
+- **FR-022a**: In Wave 3, each anomalous scene candidate MUST map to exactly one detection point derived from the ROI centroid (`ST_Centroid(regions_of_interest.geom)`) in SRID 4326 unless a later architecture amendment introduces pixel-level localization.
 
 **API Endpoints**
 
 - **FR-023**: The system MUST expose `POST /api/v1/rois/{id}/pipeline/run` that triggers `run_pipeline` for the specified ROI and returns the pipeline summary.
 - **FR-024**: `POST /api/v1/rois/{id}/pipeline/run` MUST return `404` when the ROI does not exist.
 - **FR-025**: The system MUST expose `GET /api/v1/predictions` that returns a GeoJSON FeatureCollection of `invasion_predictions` rows.
-- **FR-026**: `GET /api/v1/predictions` MUST support the following optional query filters: `roi_id` (UUID), `species_label` (string), `validated` (boolean — `true`, `false`, or absent for NULL/pending), `min_hotspot_score` (float).
+- **FR-026**: `GET /api/v1/predictions` MUST support the following optional query filters: `roi_id` (UUID), `species_label` (string), `validated` (boolean where `true` = confirmed, `false` = rejected, and omitted = no validated-state filter, including NULL/pending rows), `min_hotspot_score` (float).
 - **FR-027**: Each GeoJSON Feature in the `GET /api/v1/predictions` response MUST include the following properties: `id`, `roi_id`, `species_label`, `confidence`, `hotspot_score`, `model_version`, `predicted_at`, `validated`.
 - **FR-028**: `GET /api/v1/predictions` MUST default to ordering by `hotspot_score DESC` (using `idx_pred_score` index).
 
@@ -145,6 +148,7 @@ As a maintainer, I need the pipeline to respond predictably when an ROI has no u
 - **NFR-004 (Registry Compliance)**: Model version strings in code and DB writes MUST exactly match the registry values in `AGENTS.md` Section 6 — `anomaly-v0.1.0`, `rf-v0.1.0`, `unet-v0.1.0`.
 - **NFR-005 (Resilience)**: External API failures (USGS 3DEP HTTP 429) MUST follow the AGENTS failure-mode contract: exponential backoff max 3 retries, then log and use fallback; MUST NOT propagate as unhandled exceptions.
 - **NFR-006 (Latency)**: `POST /api/v1/rois/{id}/pipeline/run` SHOULD complete within 120 seconds for an ROI with up to 50 unmasked spectral rows under normal operating conditions.
+- **NFR-007 (Determinism)**: Wave 3 detection-point derivation and Stage 3 patch extraction MUST be deterministic for the same ROI geometry and anomalous scene date.
 
 ### Key Entities
 
@@ -184,7 +188,8 @@ spectral_time_series
 ┌─────────────────────────────────────────────────────┐
 │  Stage 3 — UNetTexture (unet-v0.1.0)                │
 │  PyTorch U-Net, 512×512 image patches               │
-│  Input:  spatial raster patch for detection point   │
+│  Input:  spatial raster patch centered on the ROI   │
+│          centroid for the anomalous scene date      │
 │  Output: hotspot_score ∈ [0.0, 1.0]                │
 └──────────────────────┬──────────────────────────────┘
                        │  hotspot_score
@@ -218,6 +223,7 @@ invasion_predictions
 | **Output** | `List[Tuple[date, float]]` — `(scene_date, departure_score)` for anomalous scenes |
 | **Model version** | `anomaly-v0.1.0` |
 | **Artifact** | `models/AnomalyDetector/anomaly-v0.1.0/model.joblib` |
+| **Training output** | `app/scripts/train_anomaly.py` MUST produce a loadable artifact at the registered path |
 | **Lineage capture** | Version emitted to structured log at inference time; NOT written to `invasion_predictions.model_version` |
 
 #### Stage 2 — FocalClassifier (`rf-v0.1.0`)
@@ -235,6 +241,7 @@ invasion_predictions
 | **Confidence range** | Clamped to [0.0, 1.0] before DB write |
 | **Model version** | `rf-v0.1.0` |
 | **Artifact** | `models/FocalClassifier/rf-v0.1.0/model.joblib` |
+| **Training output** | `app/scripts/train_classifier.py` MUST produce a loadable artifact at the registered path |
 | **Lineage capture** | This version IS written to `invasion_predictions.model_version` |
 
 #### Stage 3 — UNetTexture (`unet-v0.1.0`)
@@ -242,12 +249,15 @@ invasion_predictions
 | Property | Value |
 | :--- | :--- |
 | **Module** | `app/ml/stage3_unet.py` |
-| **Input** | 512×512 spatial raster patch (4-channel tensor) for the detection point |
+| **Input** | 512×512 spatial raster patch (4-channel tensor) centered on the ROI centroid for the anomalous scene date |
+| **Raster source** | Planetary Computer STAC item from `spectral_time_series.stac_item` for the anomalous scene date; signed via `app/services/stac_client.py` |
+| **Band mapping (4 channels)** | B04 (Red), B08 (NIR), B03 (Green), B05 (Red-Edge) in that order; all resampled to 10m before windowed extraction |
 | **Inference API** | `infer(patch_tensor)` |
 | **Output** | `float` — `hotspot_score` clamped to [0.0, 1.0] |
 | **Model version** | `unet-v0.1.0` |
 | **Artifact** | `models/UNetTexture/unet-v0.1.0/model.pt` |
-| **Lineage capture** | Version emitted to structured log at inference time; NOT written to `invasion_predictions.model_version` |
+| **Patch fallback** | Boundary-short patches are padded or cropped deterministically to preserve a 512×512 tensor |
+| **Lineage capture** | Version emitted to structured log and included in per-run sidecar metadata; NOT written to `invasion_predictions.model_version` |
 
 ## API Endpoints
 
@@ -263,7 +273,8 @@ invasion_predictions
 {
   "roi_id": "uuid",
   "predictions_created": 3,
-  "model_version": "rf-v0.1.0"
+  "model_version": "rf-v0.1.0",
+  "message": "Pipeline completed successfully"
 }
 ```
 
@@ -273,7 +284,8 @@ invasion_predictions
 - Loads all trained model artifacts before querying the database.
 - Runs Stage 1, Stage 2, Stage 3 in strict sequence.
 - Returns `predictions_created: 0` when no anomalous scenes are detected or no unmasked spectral data is available — does NOT return a non-2xx status in this case.
-- Stage 1 and Stage 3 model versions are written to structured logs; only Stage 2's `rf-v0.1.0` appears in the response and in the DB.
+- Includes a descriptive `message` explaining whether the run completed with predictions, no anomalies, or no usable spectral input.
+- Stage 1 and Stage 3 model versions are written to structured logs and per-run sidecar metadata; only Stage 2's `rf-v0.1.0` appears in the response and in the DB.
 
 ---
 
@@ -287,7 +299,7 @@ invasion_predictions
 | :--- | :--- | :--- |
 | `roi_id` | UUID | Filter to a specific region of interest |
 | `species_label` | string | Exact match filter on species label |
-| `validated` | boolean | `true` = confirmed, `false` = rejected; absent = all including NULL/pending |
+| `validated` | boolean | `true` = confirmed, `false` = rejected; absent = no validated-state filter, including NULL/pending |
 | `min_hotspot_score` | float | Include only predictions where `hotspot_score >= value` |
 
 **Response — 200 OK**:
@@ -333,7 +345,10 @@ Wave 3 writes to the `invasion_predictions` table as defined in `AGENTS.md` Sect
 | `validator_notes` | TEXT (nullable) | Written as `NULL` at prediction time |
 
 **Prediction lineage rule** (per `AGENTS.md` Section 6):
-> `invasion_predictions.model_version` stores the Stage 2 classifier version. Stage 1 (`anomaly-v0.1.0`) and Stage 3 (`unet-v0.1.0`) versions MUST be captured in structured pipeline logs or a sidecar metadata file but MUST NOT be written to the `model_version` column.
+> `invasion_predictions.model_version` stores the Stage 2 classifier version. Stage 1 (`anomaly-v0.1.0`) and Stage 3 (`unet-v0.1.0`) versions MUST be captured in structured pipeline logs and per-run sidecar metadata, but MUST NOT be written to the `model_version` column.
+
+**Wave 3 detection-point contract**:
+> Each anomalous scene candidate produces at most one prediction row in Wave 3. The persisted `geom` is the centroid of the ROI polygon in SRID 4326. This keeps the pipeline deterministic until a later wave introduces pixel-level localization.
 
 ## Success Criteria *(mandatory)*
 
@@ -344,7 +359,8 @@ Wave 3 writes to the `invasion_predictions` table as defined in `AGENTS.md` Sect
 - **SC-003**: 100% of `invasion_predictions` rows written by the pipeline have `hotspot_score` in [0.0, 1.0].
 - **SC-004**: `model_version` on every written row equals exactly `rf-v0.1.0` — no other value is acceptable.
 - **SC-005**: `GET /api/v1/predictions?roi_id={id}` returns a valid GeoJSON FeatureCollection with all required feature properties for each prediction.
-- **SC-006**: Calling `POST /api/v1/rois/{id}/pipeline/run` for an ROI with zero usable spectral rows returns `200` with `predictions_created: 0` and does not raise an exception.
+- **SC-006**: Calling `POST /api/v1/rois/{id}/pipeline/run` for an ROI with zero usable spectral rows returns `200` with `predictions_created: 0`, a descriptive `message`, and does not raise an exception.
+- **SC-009**: Stage 1 and Stage 3 lineage metadata are emitted for every pipeline run through structured logs and a per-run sidecar metadata payload.
 - **SC-007**: USGS 3DEP HTTP 429 failures are handled within the retry budget (≤ 3 retries with exponential backoff); the pipeline continues with `elevation=0.0` fallback without aborting.
 - **SC-008**: All three model artifacts load successfully from their registered paths before any DB write occurs; a missing artifact produces a clear error at startup, not a silent data failure.
 
@@ -353,7 +369,7 @@ Wave 3 writes to the `invasion_predictions` table as defined in `AGENTS.md` Sect
 - Wave 2 is complete and `spectral_time_series` contains at least one unmasked row for the test ROI used in integration testing.
 - Pre-trained model artifacts (`model.joblib` for Stages 1 and 2, `model.pt` for Stage 3) are present at their registry paths at pipeline startup.
 - Training scripts (`train_anomaly.py`, `train_classifier.py`) produce serialised artifacts compatible with the inference classes in the same feature wave.
-- The detection point `geom` written to `invasion_predictions` is derived from the centroid or anomaly epicentre within the ROI; exact derivation is delegated to the pipeline implementation.
+- The detection point `geom` written to `invasion_predictions` is the ROI centroid in Wave 3; pixel-level anomaly localization is explicitly deferred.
 - USGS 3DEP elevation lookup is point-in-time; no time-series elevation data is required.
 - No Alembic migration is needed for Wave 3 — all required columns in canonical tables already exist.
 - AlphaEarth embeddings are NOT used in Wave 3 (see `AGENTS.md` Section 6 benchmark rule).
