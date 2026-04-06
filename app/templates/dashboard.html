@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Invasive Trace — HITL Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+    #map { height: 100vh; width: 100%; }
+    #sidebar { height: 100vh; overflow-y: auto; }
+    .prediction-card { transition: all 0.2s; }
+    .prediction-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-row h-screen">
+    <!-- Map Container -->
+    <div class="flex-1 relative">
+        <div id="map"></div>
+    </div>
+
+    <!-- Sidebar Container -->
+    <div id="sidebar" class="w-96 bg-white border-l border-gray-200 p-4">
+        <h2 class="text-xl font-bold mb-4">Predictions to Review</h2>
+        <div id="prediction-list" class="space-y-4">
+            <!-- Predictions will be loaded here via HTMX -->
+            <div hx-get="/api/v1/predictions/list"
+                 hx-trigger="load"
+                 hx-target="#prediction-list"
+                 hx-swap="innerHTML">
+                <p class="text-gray-500">Loading predictions...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Leaflet map
+    const map = L.map('map').setView([35.0, -100.0], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Fetch predictions from GeoJSON endpoint and render markers
+    fetch('/api/v1/predictions')
+        .then(response => response.json())
+        .then(data => {
+            if (data.features && data.features.length > 0) {
+                L.geoJSON(data, {
+                    onEachFeature: function(feature, layer) {
+                        const props = feature.properties;
+                        const validatedBadge = props.validated === true
+                            ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Confirmed</span>'
+                            : props.validated === false
+                            ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Rejected</span>'
+                            : '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Pending</span>';
+
+                        layer.bindPopup(`
+                            <div class="p-2">
+                                <h3 class="font-bold">${props.species_label}</h3>
+                                <p>Confidence: ${props.confidence.toFixed(2)}</p>
+                                <p>Hotspot Score: ${props.hotspot_score !== null ? props.hotspot_score.toFixed(2) : 'N/A'}</p>
+                                <p>Model: ${props.model_version}</p>
+                                ${validatedBadge}
+                            </div>
+                        `);
+                    },
+                    pointToLayer: function(feature, latlng) {
+                        const props = feature.properties;
+                        const color = props.validated === true
+                            ? 'green'
+                            : props.validated === false
+                            ? 'red'
+                            : 'blue';
+
+                        return L.circleMarker(latlng, {
+                            radius: 8,
+                            fillColor: color,
+                            color: '#fff',
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        });
+                    }
+                }).addTo(map);
+            } else {
+                // No predictions — show empty state
+                document.getElementById('prediction-list').innerHTML =
+                    '<p class="text-gray-500">No predictions to review</p>';
+            }
+        })
+        .catch(err => {
+            console.error('Failed to load predictions:', err);
+            document.getElementById('prediction-list').innerHTML =
+                '<p class="text-red-500">Failed to load predictions</p>';
+        });
+</script>
+{% endblock %}

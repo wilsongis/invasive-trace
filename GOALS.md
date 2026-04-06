@@ -14,9 +14,9 @@
 ## Success Criteria
 - [ ] `just verify` passes with zero errors.
 - [ ] All four PostGIS tables created via Alembic migrations (`just db-migrate`).
-- [ ] `POST /api/v1/observations/sync` successfully seeds ≥ 1 iNaturalist record into `ground_truth_observations`.
-- [ ] Sentinel-2 STAC query returns a valid scene for a test ROI geometry.
-- [ ] Stage 1 anomaly detector produces a non-empty NDVI departure list on synthetic time series.
+- [x] `POST /api/v1/observations/sync` successfully seeds ≥ 1 iNaturalist record into `ground_truth_observations`.
+- [x] Sentinel-2 STAC query returns a valid scene for a test ROI geometry.
+- [x] Stage 1 anomaly detector produces a non-empty NDVI departure list on synthetic time series.
 - [ ] HITL dashboard renders predictions on a Leaflet map and accepts confirm/reject actions.
 - [ ] Retraining trigger fires when confirmed + rejected predictions batch reaches 50.
 

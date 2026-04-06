@@ -1,4 +1,4 @@
-"""Pydantic schemas for GET /api/v1/predictions GeoJSON output."""
+"""Pydantic schemas for GET /api/v1/predictions GeoJSON output and validation."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PredictionProperties(BaseModel):
@@ -35,3 +35,27 @@ class PredictionFeatureCollection(BaseModel):
 
     type: str = "FeatureCollection"
     features: list[PredictionFeature]
+
+
+class ValidationRequest(BaseModel):
+    """Request body for PATCH /api/v1/predictions/{id}/validate."""
+
+    model_config = {"strict": True}
+
+    validated: bool
+    validator_notes: str | None = Field(default=None, max_length=1000)
+
+
+class ValidationResponse(BaseModel):
+    """Response body for PATCH /api/v1/predictions/{id}/validate."""
+
+    id: UUID
+    roi_id: UUID
+    species_label: str
+    confidence: float
+    hotspot_score: float | None
+    model_version: str
+    predicted_at: datetime
+    validated: bool | None
+    validator_notes: str | None
+    retraining_triggered: bool

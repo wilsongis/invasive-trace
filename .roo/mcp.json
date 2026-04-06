@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "just": {
+      "command": "just-mcp",
+      "args": ["-w", "/path/to/your/project"]
+    },
+    "ruff": {
+      "command": "uvx",
+      "args": ["mcp-server-analyzer"]
+    }
+  }
+}

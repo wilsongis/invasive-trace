@@ -5,7 +5,7 @@
 ## 1. Project Identity
 **Objective:** Detect, classify, and map invasive plant species across Southern Grassland Institute study areas using multi-temporal remote sensing, spectral analysis, and a three-stage AI execution chain.
 **Client:** Southern Grassland Institute
-**Status:** Architecture Phase — PostGIS schema and containerized environment initialized.
+**Status:** Implementation Phase — Waves 0, 1, Pillar II (Remote Sensing), Wave 3 (AI Execution Chain), and Wave 4 (HITL Dashboard) complete; Wave 5 (Polish) in backlog.
 
 ---
 
@@ -229,8 +229,7 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Compare `rf-v0.1.0` baseline features against `alphaearth-benchmark-v0.1.0` on identical train/test splits
 - [ ] Record go/no-go recommendation before any production pipeline change is proposed
 
-### Backlog — Pillar II: Remote Sensing
-### Active — Pillar III: AI Execution Chain (spec 007)
+### Completed — Pillar III: AI Execution Chain (spec 007)
 - [x] Author `specs/007-wave3-ai-chain/spec.md` — feature specification artifact completed
 - [x] Author `specs/007-wave3-ai-chain/plan.md` — full implementation plan (Phase 0 and Phases 3A–3D)
 - [x] Author `specs/007-wave3-ai-chain/tasks.md` — executable task list (W3-T001 through W3-T016)
@@ -256,17 +255,19 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] `app/api/v1/scenes.py` — POST /api/v1/scenes/ingest, GET /api/v1/scenes
 - [x] Unit tests: test_indices.py, test_cloud_mask.py
 - [x] Integration test: test_scene_ingestion.py
-- [ ] `just verify` gate — 0 lint errors, 0 test failures
+- [x] `just verify` gate — 0 lint errors, 0 test failures
 
 ### Backlog — Pillar II: Remote Sensing
 - [x] Plan authored — see `specs/005-pillar2-remote-sensing/` for full design artifacts
 - [ ] Stage 2: Focal classifier training + feature extraction
 - [ ] Stage 3: U-Net inference service
 
-### Backlog — Pillar IV: HITL Dashboard
-- [ ] Leaflet map + HTMX prediction review panel
-- [ ] `PATCH /api/v1/predictions/{id}/validate` endpoint
-- [ ] Retraining trigger: batch feedback collection
+### Completed — Pillar IV: HITL Dashboard (Wave 4)
+- [x] `PATCH /api/v1/predictions/{id}/validate` endpoint in `app/api/v1/predictions.py` with `ValidationRequest`/`ValidationResponse` schemas
+- [x] `check_retrain_trigger()` in `app/services/retrain_trigger.py` with `RETRAIN_THRESHOLD = 50` and `RETRAINING_TRIGGERED` log emission
+- [x] Leaflet + HTMX dashboard at `GET /` with `app/templates/base.html`, `dashboard.html`, and `partials/prediction_card.html`
+- [x] Unit tests: `tests/unit/test_validate_endpoint.py` (7 tests), `tests/unit/test_retrain_trigger.py` (5 tests)
+- [x] `just verify` gate — 0 lint errors, 89 passed, 2 skipped
 
 ---
-⏱️ **State:** Wave 0 + Wave 1 complete; Pillar II Remote Sensing complete; Wave 3 AI Execution Chain implemented on branch `007-wave3-ai-chain` with deterministic centroid detection, Stage 3 STAC patch extraction (B04/B08/B03/B05 at 10m), pipeline trigger and prediction GeoJSON APIs, and resilience/fallback coverage; quality gate passing (`just verify`: ruff clean, pytest 103 passed/2 skipped) | 🧠 **Memory:** Updated v2.4 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 + Wave 1 + Pillar II Remote Sensing + Wave 3 AI Execution Chain + Wave 4 HITL Dashboard complete; quality gate passing (`just verify`: ruff clean, pytest 89 passed/2 skipped) | 🧠 **Memory:** Updated v2.5 | 🛠️ **Platform:** Podman / macOS Universal

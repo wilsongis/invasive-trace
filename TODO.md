@@ -121,28 +121,28 @@ updated: 2026-03-27
 
 ### Phase 3A — Stage 1: Anomaly Detector
 
-- [ ] W3-T001 [PIII] Create `app/ml/stage1_anomaly.py` — `AnomalyDetector` class wrapping `sklearn.ensemble.IsolationForest`; `fit(roi_id, season_start, season_end)` trains on historical NDVI baseline from `spectral_time_series`; `predict(roi_id)` returns list of `(scene_date, departure_score)` for anomalous scenes; model version string MUST be `anomaly-v0.1.0` from `AGENTS.md` Section 6
-- [ ] W3-T002 [P] [PIII] Training script `app/scripts/train_anomaly.py` — saves fitted model to `models/AnomalyDetector/anomaly-v0.1.0/model.joblib`
-- [ ] W3-T003 [P] [PIII] Unit test `tests/unit/test_stage1_anomaly.py` — synthetic 12-month NDVI series with one outlier month; assert outlier flagged; assert non-outlier months not flagged
+- [x] W3-T001 [PIII] Create `app/ml/stage1_anomaly.py` — `AnomalyDetector` class wrapping `sklearn.ensemble.IsolationForest`; `fit(roi_id, season_start, season_end)` trains on historical NDVI baseline from `spectral_time_series`; `predict(roi_id)` returns list of `(scene_date, departure_score)` for anomalous scenes; model version string MUST be `anomaly-v0.1.0` from `AGENTS.md` Section 6
+- [x] W3-T002 [P] [PIII] Training script `app/scripts/train_anomaly.py` — saves fitted model to `models/AnomalyDetector/anomaly-v0.1.0/model.joblib`
+- [x] W3-T003 [P] [PIII] Unit test `tests/unit/test_stage1_anomaly.py` — synthetic 12-month NDVI series with one outlier month; assert outlier flagged; assert non-outlier months not flagged
 
 ### Phase 3B — Stage 2: Focal Classifier
 
-- [ ] W3-T004 [PIII] Create `app/ml/stage2_classifier.py` — `FocalClassifier` class wrapping `sklearn.ensemble.RandomForestClassifier`; `fit(X, y)` where X is spectral feature vector `[ndvi, endvi, red_edge, elevation]` and y is `species_label`; `predict(X)` returns `(species_label, confidence)`; model version MUST be `rf-v0.1.0`
-- [ ] W3-T005 [P] [PIII] Feature extractor `app/services/feature_extractor.py` — assembles feature vector from `spectral_time_series` + USGS 3DEP elevation for a given point geometry
-- [ ] W3-T006 [P] [PIII] Training script `app/scripts/train_classifier.py` — uses `ground_truth_observations` as labels; saves model to `models/FocalClassifier/rf-v0.1.0/model.joblib`
-- [ ] W3-T007 [P] [PIII] Unit test `tests/unit/test_stage2_classifier.py` — synthetic feature vectors for two species; assert correct label returned; assert `confidence` in [0.0, 1.0]
+- [x] W3-T004 [PIII] Create `app/ml/stage2_classifier.py` — `FocalClassifier` class wrapping `sklearn.ensemble.RandomForestClassifier`; `fit(X, y)` where X is spectral feature vector `[ndvi, endvi, red_edge, elevation]` and y is `species_label`; `predict(X)` returns `(species_label, confidence)`; model version MUST be `rf-v0.1.0`
+- [x] W3-T005 [P] [PIII] Feature extractor `app/services/feature_extractor.py` — assembles feature vector from `spectral_time_series` + USGS 3DEP elevation for a given point geometry
+- [x] W3-T006 [P] [PIII] Training script `app/scripts/train_classifier.py` — uses `ground_truth_observations` as labels; saves model to `models/FocalClassifier/rf-v0.1.0/model.joblib`
+- [x] W3-T007 [P] [PIII] Unit test `tests/unit/test_stage2_classifier.py` — synthetic feature vectors for two species; assert correct label returned; assert `confidence` in [0.0, 1.0]
 
 ### Phase 3C — Stage 3: U-Net Hotspot Scorer
 
-- [ ] W3-T008 [PIII] Create `app/ml/stage3_unet.py` — `UNetTexture` class wrapping PyTorch U-Net (512×512 input patches); `infer(patch_tensor)` returns `hotspot_score` float 0–1; model version MUST be `unet-v0.1.0`; model loaded from `models/UNetTexture/unet-v0.1.0/model.pt`
-- [ ] W3-T009 [P] [PIII] Unit test `tests/unit/test_stage3_unet.py` — random 512×512×4 tensor input; assert output is a float in [0.0, 1.0]
+- [x] W3-T008 [PIII] Create `app/ml/stage3_unet.py` — `UNetTexture` class wrapping PyTorch U-Net (512×512 input patches); `infer(patch_tensor)` returns `hotspot_score` float 0–1; model version MUST be `unet-v0.1.0`; model loaded from `models/UNetTexture/unet-v0.1.0/model.pt`
+- [x] W3-T009 [P] [PIII] Unit test `tests/unit/test_stage3_unet.py` — random 512×512×4 tensor input; assert output is a float in [0.0, 1.0]
 
 ### Phase 3D — Pipeline Orchestrator & Predictions API
 
-- [ ] W3-T010 [PIII] Create `app/services/pipeline.py` — `run_pipeline(roi_id)` orchestrates all three stages in sequence; writes final `InvasionPrediction` rows to DB with `species_label`, `confidence`, `hotspot_score`, `model_version`, `geom`, where `model_version` stores the Stage 2 classifier version and Stage 1/Stage 3 lineage is emitted to logs or sidecar metadata
-- [ ] W3-T011 [P] [PIII] Create `POST /api/v1/rois/{id}/pipeline/run` endpoint in `app/api/v1/pipeline.py` — triggers pipeline; returns count of predictions created
-- [ ] W3-T012 [P] [PIII] Create `GET /api/v1/predictions` endpoint — filterable by `roi_id`, `species_label`, `validated`, `min_hotspot_score`; returns GeoJSON FeatureCollection
-- [ ] W3-T013 [P] [PIII] Integration test `tests/integration/test_pipeline.py` — seed one ROI + spectral rows; run pipeline; assert `invasion_predictions` table has ≥ 1 row with valid `model_version` and `confidence BETWEEN 0.0 AND 1.0`
+- [x] W3-T010 [PIII] Create `app/services/pipeline.py` — `run_pipeline(roi_id)` orchestrates all three stages in sequence; writes final `InvasionPrediction` rows to DB with `species_label`, `confidence`, `hotspot_score`, `model_version`, `geom`, where `model_version` stores the Stage 2 classifier version and Stage 1/Stage 3 lineage is emitted to logs or sidecar metadata
+- [x] W3-T011 [P] [PIII] Create `POST /api/v1/rois/{id}/pipeline/run` endpoint in `app/api/v1/pipeline.py` — triggers pipeline; returns count of predictions created
+- [x] W3-T012 [P] [PIII] Create `GET /api/v1/predictions` endpoint — filterable by `roi_id`, `species_label`, `validated`, `min_hotspot_score`; returns GeoJSON FeatureCollection
+- [x] W3-T013 [P] [PIII] Integration test `tests/integration/test_pipeline.py` — seed one ROI + spectral rows; run pipeline; assert `invasion_predictions` table has ≥ 1 row with valid `model_version` and `confidence BETWEEN 0.0 AND 1.0`
 
 **Checkpoint ✓**: `POST /api/v1/rois/{id}/pipeline/run` completes without error; `GET /api/v1/predictions?roi_id={id}` returns ≥ 1 GeoJSON feature.
 
@@ -220,7 +220,7 @@ Wave 0 (Bootstrap)
 | Wave 0 — Bootstrap | ✅ Complete | Blocks all |
 | Wave 1 — Pillar I | ✅ Complete (schema, ROI API, sync API, seeding + tests validated) | Blocks Wave 2+ |
 | Wave 2 — Pillar II | ✅ Complete (spec005 delivered, all 40 tests passing) | Blocks Wave 3+ |
-| Wave 3 — Pillar III | ⬜ Not started | Blocks Wave 4+ |
+| Wave 3 — Pillar III | ✅ Complete | Blocks Wave 4+ |
 | Wave 4 — Pillar IV | ⬜ Not started | Blocks Wave 5 |
 | Wave 5 — Polish | ⬜ Not started | — |
 

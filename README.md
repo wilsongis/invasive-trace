@@ -58,7 +58,11 @@ Three-stage pipeline that runs against every Region of Interest (ROI):
 | `just db-rollback` | Roll back the last migration |
 | `just db-revision msg="…"` | Autogenerate a new migration from model changes |
 | `just seed-data` | Fetch iNaturalist + EDDMapS records into `ground_truth_observations` |
+| `just seed-data-dry-run` | Dry-run seed without writing to database |
 | `just research-sync` | Push `/docs/research` to NotebookLM |
+| `just research-test` | Verify MCP connection to gaia-atlas is live |
+| `just research-serve` | Start NotebookLM MCP server |
+| `just research-open` | Open gaia-atlas in browser |
 | `just lint` | Ruff check + format |
 | `just test` | Run pytest suite |
 | `just verify` | lint + test |

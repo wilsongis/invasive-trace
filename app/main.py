@@ -1,9 +1,10 @@
 """FastAPI application entry point with lifespan, health endpoint, and v1 router."""
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1 import router as v1_router
 
@@ -28,16 +29,9 @@ app = FastAPI(
 
 app.include_router(v1_router, prefix="/api/v1")
 
-
-@app.get("/", tags=["ops"])
-async def root() -> dict[str, str]:
-    """Service root endpoint for local startup validation."""
-    return {
-        "status": "ok",
-        "health": "/healthz",
-        "api": "/api/v1/",
-        "docs": "/docs",
-    }
+# Mount static files directory for dashboard assets (if any)
+with suppress(RuntimeError):
+    app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.get("/healthz", tags=["ops"])
