@@ -21,14 +21,10 @@
     <!-- Sidebar Container -->
     <div id="sidebar" class="w-96 bg-white border-l border-gray-200 p-4">
         <h2 class="text-xl font-bold mb-4">Predictions to Review</h2>
-        <div id="prediction-list" class="space-y-4">
-            <!-- Predictions will be loaded here via HTMX -->
-            <div hx-get="/api/v1/predictions/list"
-                 hx-trigger="load"
-                 hx-target="#prediction-list"
-                 hx-swap="innerHTML">
-                <p class="text-gray-500">Loading predictions...</p>
-            </div>
+        <div id="prediction-list" class="space-y-4"
+             hx-get="/api/v1/predictions/list"
+             hx-trigger="load">
+            <p class="text-gray-500">Loading predictions...</p>
         </div>
     </div>
 </div>

@@ -168,9 +168,7 @@ class TestValidatePredictionEndpoint:
 
         app.dependency_overrides.pop(predictions_module.get_db, None)
 
-    def test_validate_triggers_retraining_at_threshold(
-        self, mock_prediction: MagicMock
-    ) -> None:
+    def test_validate_triggers_retraining_at_threshold(self, mock_prediction: MagicMock) -> None:
         """PATCH should return retraining_triggered=True when threshold is met."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_prediction

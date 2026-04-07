@@ -1,0 +1,46 @@
+<div class="space-y-4">
+    {% for pred in predictions %}
+    <div class="prediction-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm" id="card-{{ pred.id }}">
+        <div class="flex justify-between items-start mb-2">
+            <h3 class="font-semibold text-gray-900">{{ pred.species_label }}</h3>
+            {% if pred.validated == true %}
+                <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">Confirmed</span>
+            {% elif pred.validated == false %}
+                <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-medium">Rejected</span>
+            {% else %}
+                <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs font-medium">Pending</span>
+            {% endif %}
+        </div>
+
+        <div class="space-y-1 text-sm text-gray-600 mb-3">
+            <p>Confidence: <span class="font-medium">{{ "%.2f"|format(pred.confidence) }}</span></p>
+            <p>Hotspot Score: <span class="font-medium">{{ "%.2f"|format(pred.hotspot_score) if pred.hotspot_score is not none else "N/A" }}</span></p>
+            <p>Model: <span class="font-mono text-xs">{{ pred.model_version }}</span></p>
+            {% if pred.validator_notes %}
+                <p class="text-gray-500 italic mt-2">Notes: {{ pred.validator_notes }}</p>
+            {% endif %}
+        </div>
+
+        <div class="flex gap-2">
+            <button
+                hx-patch="/api/v1/predictions/{{ pred.id }}/validate/html"
+                hx-vals='{"validated": true}'
+                hx-target="#card-{{ pred.id }}"
+                hx-swap="outerHTML"
+                class="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors"
+            >
+                Confirm
+            </button>
+            <button
+                hx-patch="/api/v1/predictions/{{ pred.id }}/validate/html"
+                hx-vals='{"validated": false}'
+                hx-target="#card-{{ pred.id }}"
+                hx-swap="outerHTML"
+                class="flex-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition-colors"
+            >
+                Reject
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>

@@ -42,40 +42,46 @@ async def query_predictions(
     Returns:
         PredictionFeatureCollection ordered by hotspot_score DESC.
     """
-    stmt = select(InvasionPrediction).order_by(InvasionPrediction.hotspot_score.desc().nullslast())
-
-    if roi_id is not None:
-        stmt = stmt.where(InvasionPrediction.roi_id == roi_id)
-
-    if species_label is not None:
-        stmt = stmt.where(InvasionPrediction.species_label == species_label)
-
-    if validated_filter_present:
-        stmt = stmt.where(InvasionPrediction.validated == validated)
-
-    if min_hotspot_score is not None:
-        stmt = stmt.where(InvasionPrediction.hotspot_score >= min_hotspot_score)
-
-    result = await db.execute(stmt)
-    rows = result.scalars().all()
-
-    features: list[PredictionFeature] = []
-    for pred in rows:
-        point = to_shape(pred.geom)
-        features.append(
-            PredictionFeature(
-                geometry=dict(mapping(point)),
-                properties=PredictionProperties(
-                    id=pred.id,
-                    roi_id=pred.roi_id,
-                    species_label=pred.species_label,
-                    confidence=pred.confidence,
-                    hotspot_score=pred.hotspot_score,
-                    model_version=pred.model_version,
-                    predicted_at=pred.predicted_at,
-                    validated=pred.validated,
-                ),
-            )
+    try:
+        stmt = select(InvasionPrediction).order_by(
+            InvasionPrediction.hotspot_score.desc().nullslast()
         )
 
-    return PredictionFeatureCollection(features=features)
+        if roi_id is not None:
+            stmt = stmt.where(InvasionPrediction.roi_id == roi_id)
+
+        if species_label is not None:
+            stmt = stmt.where(InvasionPrediction.species_label == species_label)
+
+        if validated_filter_present:
+            stmt = stmt.where(InvasionPrediction.validated == validated)
+
+        if min_hotspot_score is not None:
+            stmt = stmt.where(InvasionPrediction.hotspot_score >= min_hotspot_score)
+
+        result = await db.execute(stmt)
+        rows = result.scalars().all()
+
+        features: list[PredictionFeature] = []
+        for pred in rows:
+            point = to_shape(pred.geom)
+            features.append(
+                PredictionFeature(
+                    geometry=dict(mapping(point)),
+                    properties=PredictionProperties(
+                        id=pred.id,
+                        roi_id=pred.roi_id,
+                        species_label=pred.species_label,
+                        confidence=pred.confidence,
+                        hotspot_score=pred.hotspot_score,
+                        model_version=pred.model_version,
+                        predicted_at=pred.predicted_at,
+                        validated=pred.validated,
+                    ),
+                )
+            )
+
+        return PredictionFeatureCollection(features=features)
+    except Exception as e:
+        logger.error("Failed to query predictions: %s", e, exc_info=True)
+        return PredictionFeatureCollection(features=[])

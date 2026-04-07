@@ -61,9 +61,7 @@ class TestRetrainTrigger:
         assert "RETRAINING_TRIGGERED" in caplog.text
 
     @pytest.mark.asyncio
-    async def test_returns_false_for_zero_validated(
-        self, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    async def test_returns_false_for_zero_validated(self, caplog: pytest.LogCaptureFixture) -> None:
         """0 validated rows should return False."""
         mock_result = MagicMock()
         mock_result.scalar_one.return_value = 0

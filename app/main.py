@@ -4,7 +4,9 @@ from contextlib import asynccontextmanager, suppress
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from app.api.v1 import router as v1_router
 
@@ -32,6 +34,15 @@ app.include_router(v1_router, prefix="/api/v1")
 # Mount static files directory for dashboard assets (if any)
 with suppress(RuntimeError):
     app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Dashboard templates
+templates = Jinja2Templates(directory="app/templates")
+
+
+@app.get("/", response_class=HTMLResponse, tags=["dashboard"])
+async def root_dashboard() -> HTMLResponse:
+    """Render the HITL dashboard at the root path."""
+    return templates.TemplateResponse("dashboard.html", {"request": {}})
 
 
 @app.get("/healthz", tags=["ops"])
