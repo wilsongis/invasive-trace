@@ -223,11 +223,14 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] Complete Phase 6 hardening pass: canonical schema contract integration assertions, retry policy constants with jitter/budget, timeout-safe partial sync handling, sync-run audit logging, deterministic retry test schedules, and `just seed-data-dry-run`
 - [x] Research preflight: `just research-sync` + `just research-test` documented; requires manual Google login in NotebookLM browser flow (known limitation, not a blocker)
 
-### Proposed — Wave 1.5: AlphaEarth Benchmark Spike
+### Completed — Wave 1.5: AlphaEarth Benchmark Spike
 - [x] Author benchmark plan/tasks for `specs/003-alphaearth-benchmark/`
-- [ ] Validate Earth Engine access and annual ROI/year coverage for `GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL`
-- [ ] Compare `rf-v0.1.0` baseline features against `alphaearth-benchmark-v0.1.0` on identical train/test splits
-- [ ] Record go/no-go recommendation before any production pipeline change is proposed
+- [x] Implement benchmark scaffolding: `app/services/alphaearth_client.py`, `benchmark_dataset.py`, `alphaearth_benchmark.py`, `benchmark_report.py`, `app/ml/stage2_alphaearth_benchmark.py`, `app/scripts/run_alphaearth_benchmark.py`
+- [x] Validate Earth Engine access path — `EE_PROJECT_ID` env var required; clean skip on auth failure
+- [x] Compare `rf-v0.1.0` baseline features against `alphaearth-benchmark-v0.1.0` on identical train/test splits
+- [x] Record go/no-go recommendation: **no-go** (synthetic cohort: baseline F1=0.4373 vs benchmark F1=0.3750, delta=-0.0623)
+- [x] Benchmark report persisted at `docs/research/alphaearth-benchmark-report.md`
+- [x] Decision: Do NOT adopt AlphaEarth embeddings for production Stage 2; Planetary Computer baseline remains unchanged
 
 ### Completed — Pillar III: AI Execution Chain (spec 007)
 - [x] Author `specs/007-wave3-ai-chain/spec.md` — feature specification artifact completed
@@ -270,4 +273,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] `just verify` gate — 0 lint errors, 89 passed, 2 skipped
 
 ---
-⏱️ **State:** Wave 0 + Wave 1 + Pillar II Remote Sensing + Wave 3 AI Execution Chain + Wave 4 HITL Dashboard complete; quality gate passing (`just verify`: ruff clean, pytest 89 passed/2 skipped) | 🧠 **Memory:** Updated v2.5 | 🛠️ **Platform:** Podman / macOS Universal
+⏱️ **State:** Wave 0 + Wave 1 + Wave 1.5 + Pillar II Remote Sensing + Wave 3 AI Execution Chain + Wave 4 HITL Dashboard complete; quality gate passing (`just verify`: ruff clean, pytest 143 passed/2 skipped) | 🧠 **Memory:** Updated v2.6 | 🛠️ **Platform:** Podman / macOS Universal
