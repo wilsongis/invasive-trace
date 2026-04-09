@@ -5,9 +5,9 @@ from datetime import date
 from typing import Any
 
 from geoalchemy2 import Geometry
-from sqlalchemy import Boolean, CheckConstraint, Date, Index, Text, text
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Index, Text, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -43,6 +43,12 @@ class GroundTruthObservation(Base):
     species_label: Mapped[str] = mapped_column(Text, nullable=False)
     observer: Mapped[str | None] = mapped_column(Text, nullable=True)
     observed_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    roi_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("regions_of_interest.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     geom = mapped_column(Geometry("POINT", srid=4326), nullable=False)
     is_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("TRUE"))
     raw_payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    roi = relationship("RegionOfInterest", back_populates="ground_truth_observations")

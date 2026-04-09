@@ -38,3 +38,4 @@ class RegionOfInterest(Base):
 
     predictions = relationship("InvasionPrediction", back_populates="roi")
     spectral_rows = relationship("SpectralTimeSeries", back_populates="roi")
+    ground_truth_observations = relationship("GroundTruthObservation", back_populates="roi")

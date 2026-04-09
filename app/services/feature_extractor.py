@@ -112,7 +112,9 @@ class FeatureExtractor:
     """Extracts features for Stage 2 classifier training and inference."""
 
     @staticmethod
-    async def extract_training_cohort(roi_ids: list[UUID]) -> list[TrainingCohortRecord]:
+    async def extract_training_cohort(
+        roi_ids: list[UUID], skip_reasons: dict[str, int] | None = None
+    ) -> list[TrainingCohortRecord]:
         """Extract training cohort from ground truth observations and spectral time series.
 
         For each confirmed ground-truth observation, aggregate spectral indices over the
@@ -124,12 +126,17 @@ class FeatureExtractor:
 
         Args:
             roi_ids: List of ROI IDs to extract training data from.
+            skip_reasons: Optional dict to accumulate skip counts by reason.
 
         Returns:
             List of TrainingCohortRecord objects, one per valid observation.
         """
+        if skip_reasons is None:
+            skip_reasons = {}
+
         async with async_session_factory() as session:
             # Fetch confirmed ground-truth observations for the target ROIs.
+            # ORDER BY required for deterministic cohort — do not remove
             gto_query = (
                 select(
                     GroundTruthObservation.id,
@@ -162,9 +169,12 @@ class FeatureExtractor:
                         "extract_training_cohort: skipping observation %s (no observed_at date)",
                         gto_row.id,
                     )
+                    skip_reasons.setdefault("skipped_no_observed_at", 0)
+                    skip_reasons["skipped_no_observed_at"] += 1
                     continue
 
                 # Query unmasked spectral scenes within the ±45-day window.
+                # T021: Enforce cloud-mask filter — is_masked = FALSE
                 window_filter = text(
                     "ABS(EXTRACT(epoch FROM (scene_date - :obs_date)) / 86400) <= :window"
                 )
@@ -177,7 +187,7 @@ class FeatureExtractor:
                     )
                     .where(
                         SpectralTimeSeries.roi_id == roi_id,
-                        SpectralTimeSeries.is_masked.is_(False),
+                        SpectralTimeSeries.is_masked.is_(False),  # T021: cloud-mask filter
                         window_filter,
                     )
                     .params(obs_date=observed_at, window=TEMPORAL_WINDOW_DAYS)
@@ -192,6 +202,7 @@ class FeatureExtractor:
                     if r.ndvi is not None and r.endvi is not None and r.red_edge is not None
                 ]
 
+                # T020: Enforce minimum scene count
                 if len(valid_rows) < MIN_SCENES:
                     logger.warning(
                         "extract_training_cohort: skipping observation %s "
@@ -201,6 +212,8 @@ class FeatureExtractor:
                         MIN_SCENES,
                         TEMPORAL_WINDOW_DAYS,
                     )
+                    skip_reasons.setdefault("skipped_low_scene_count", 0)
+                    skip_reasons["skipped_low_scene_count"] += 1
                     continue
 
                 ndvi_vals = [r.ndvi for r in valid_rows]
@@ -219,6 +232,35 @@ class FeatureExtractor:
                 endvi_min, endvi_max, endvi_mean, endvi_std = _stats(endvi_vals)
                 re_min, re_max, re_mean, re_std = _stats(re_vals)
 
+                # T020: Validate feature vector before adding to cohort
+                feature_values = [
+                    ndvi_min,
+                    ndvi_max,
+                    ndvi_mean,
+                    ndvi_std,
+                    endvi_min,
+                    endvi_max,
+                    endvi_mean,
+                    endvi_std,
+                    red_edge_min := re_min,
+                    red_edge_max := re_max,
+                    red_edge_mean := re_mean,
+                    red_edge_std := re_std,
+                ]
+
+                # Check all values are finite (no NaN or infinity)
+                import math
+
+                if not all(math.isfinite(v) for v in feature_values):
+                    logger.warning(
+                        "extract_training_cohort: skipping observation %s "
+                        "(non-finite feature value detected)",
+                        gto_row.id,
+                    )
+                    skip_reasons.setdefault("skipped_invalid_features", 0)
+                    skip_reasons["skipped_invalid_features"] += 1
+                    continue
+
                 cohort.append(
                     TrainingCohortRecord(
                         roi_id=roi_id,
@@ -231,10 +273,10 @@ class FeatureExtractor:
                         endvi_max=endvi_max,
                         endvi_mean=endvi_mean,
                         endvi_std=endvi_std,
-                        red_edge_min=re_min,
-                        red_edge_max=re_max,
-                        red_edge_mean=re_mean,
-                        red_edge_std=re_std,
+                        red_edge_min=red_edge_min,
+                        red_edge_max=red_edge_max,
+                        red_edge_mean=red_edge_mean,
+                        red_edge_std=red_edge_std,
                     )
                 )
 

@@ -164,9 +164,7 @@ def test_load_classifier_success(tmp_path):
     from sklearn.ensemble import RandomForestClassifier
 
     X, y = _make_X_y()
-    model = RandomForestClassifier(
-        n_estimators=10, random_state=42, class_weight="balanced"
-    )
+    model = RandomForestClassifier(n_estimators=10, random_state=42, class_weight="balanced")
     model.fit(X, y)
     artifact = tmp_path / "classifier.pkl"
     joblib.dump(model, artifact)
@@ -174,6 +172,7 @@ def test_load_classifier_success(tmp_path):
     version = "rf-v0.1.0"
     # Monkey-patch the path resolution so load_classifier looks in tmp_path
     import unittest.mock as mock
+
     with mock.patch("app.ml.stage2_classifier.Path") as MockPath:
         mock_path_instance = mock.MagicMock()
         mock_path_instance.exists.return_value = True
@@ -203,6 +202,7 @@ def test_get_model_metadata_keys(tmp_path):
         mock_path_instance.__truediv__ = lambda self, other: metadata_file
         MockPath.return_value = mock_path_instance
         import builtins
+
         orig_open = builtins.open
         open_side_effect = lambda p, *a, **kw: orig_open(metadata_file, *a, **kw)  # noqa: E731
         with mock.patch("builtins.open", side_effect=open_side_effect):
@@ -232,14 +232,23 @@ def test_rf_stratified_split():
         TrainingCohortRecord(
             roi_id=dummy_roi,
             species_label=species[i % 3],
-            ndvi_min=raw[i][0], ndvi_max=raw[i][1], ndvi_mean=raw[i][2], ndvi_std=raw[i][3],
-            endvi_min=raw[i][4], endvi_max=raw[i][5], endvi_mean=raw[i][6], endvi_std=raw[i][7],
-            red_edge_min=raw[i][8], red_edge_max=raw[i][9],
-            red_edge_mean=raw[i][10], red_edge_std=raw[i][11],
+            ndvi_min=raw[i][0],
+            ndvi_max=raw[i][1],
+            ndvi_mean=raw[i][2],
+            ndvi_std=raw[i][3],
+            endvi_min=raw[i][4],
+            endvi_max=raw[i][5],
+            endvi_mean=raw[i][6],
+            endvi_std=raw[i][7],
+            red_edge_min=raw[i][8],
+            red_edge_max=raw[i][9],
+            red_edge_mean=raw[i][10],
+            red_edge_std=raw[i][11],
         )
         for i in range(n)
     ]
     import tempfile
+
     with tempfile.TemporaryDirectory() as tmpdir:  # noqa: SIM117
         result = FocalClassifier.train_classifier(cohort, tmpdir)
     # Expect 3 classes in result
@@ -262,10 +271,18 @@ def test_rf_metrics_numeric(tmp_path):
         TrainingCohortRecord(
             roi_id=dummy_roi,
             species_label=species[i % 3],
-            ndvi_min=raw[i][0], ndvi_max=raw[i][1], ndvi_mean=raw[i][2], ndvi_std=raw[i][3],
-            endvi_min=raw[i][4], endvi_max=raw[i][5], endvi_mean=raw[i][6], endvi_std=raw[i][7],
-            red_edge_min=raw[i][8], red_edge_max=raw[i][9],
-            red_edge_mean=raw[i][10], red_edge_std=raw[i][11],
+            ndvi_min=raw[i][0],
+            ndvi_max=raw[i][1],
+            ndvi_mean=raw[i][2],
+            ndvi_std=raw[i][3],
+            endvi_min=raw[i][4],
+            endvi_max=raw[i][5],
+            endvi_mean=raw[i][6],
+            endvi_std=raw[i][7],
+            red_edge_min=raw[i][8],
+            red_edge_max=raw[i][9],
+            red_edge_mean=raw[i][10],
+            red_edge_std=raw[i][11],
         )
         for i in range(n)
     ]
@@ -297,10 +314,18 @@ def test_rf_model_serialization(tmp_path):
         TrainingCohortRecord(
             roi_id=dummy_roi,
             species_label=species[i % 3],
-            ndvi_min=raw[i][0], ndvi_max=raw[i][1], ndvi_mean=raw[i][2], ndvi_std=raw[i][3],
-            endvi_min=raw[i][4], endvi_max=raw[i][5], endvi_mean=raw[i][6], endvi_std=raw[i][7],
-            red_edge_min=raw[i][8], red_edge_max=raw[i][9],
-            red_edge_mean=raw[i][10], red_edge_std=raw[i][11],
+            ndvi_min=raw[i][0],
+            ndvi_max=raw[i][1],
+            ndvi_mean=raw[i][2],
+            ndvi_std=raw[i][3],
+            endvi_min=raw[i][4],
+            endvi_max=raw[i][5],
+            endvi_mean=raw[i][6],
+            endvi_std=raw[i][7],
+            red_edge_min=raw[i][8],
+            red_edge_max=raw[i][9],
+            red_edge_mean=raw[i][10],
+            red_edge_std=raw[i][11],
         )
         for i in range(n)
     ]
@@ -319,8 +344,6 @@ def test_infer_confidence_clipped():
     assert FocalClassifier.clip_confidence(1.01) == 1.0
     # passthrough midpoint
     assert FocalClassifier.clip_confidence(0.5) == pytest.approx(0.5)
-
-
 
 
 def test_infer_dry_run_no_db_write():
@@ -344,15 +367,25 @@ def test_infer_dry_run_no_db_write():
     dummy_candidate.grid_col = 0
 
     dummy_vector = InferenceVector(
-        ndvi_min=0.1, ndvi_max=0.9, ndvi_mean=0.5, ndvi_std=0.2,
-        endvi_min=0.2, endvi_max=0.8, endvi_mean=0.5, endvi_std=0.1,
-        red_edge_min=0.3, red_edge_max=0.7, red_edge_mean=0.5, red_edge_std=0.1,
+        ndvi_min=0.1,
+        ndvi_max=0.9,
+        ndvi_mean=0.5,
+        ndvi_std=0.2,
+        endvi_min=0.2,
+        endvi_max=0.8,
+        endvi_mean=0.5,
+        endvi_std=0.1,
+        red_edge_min=0.3,
+        red_edge_max=0.7,
+        red_edge_mean=0.5,
+        red_edge_std=0.1,
     )
 
     with (
         mock.patch.object(FocalClassifier, "load_classifier", return_value=mock_model),
         mock.patch.object(
-            FocalClassifier, "get_model_metadata",
+            FocalClassifier,
+            "get_model_metadata",
             return_value={"feature_names": [], "class_labels": [], "model_version": VERSION},
         ),
         mock.patch(
@@ -397,15 +430,25 @@ def test_infer_model_version_set():
     dummy_candidate.grid_col = 0
 
     dummy_vector = InferenceVector(
-        ndvi_min=0.1, ndvi_max=0.9, ndvi_mean=0.5, ndvi_std=0.2,
-        endvi_min=0.2, endvi_max=0.8, endvi_mean=0.5, endvi_std=0.1,
-        red_edge_min=0.3, red_edge_max=0.7, red_edge_mean=0.5, red_edge_std=0.1,
+        ndvi_min=0.1,
+        ndvi_max=0.9,
+        ndvi_mean=0.5,
+        ndvi_std=0.2,
+        endvi_min=0.2,
+        endvi_max=0.8,
+        endvi_mean=0.5,
+        endvi_std=0.1,
+        red_edge_min=0.3,
+        red_edge_max=0.7,
+        red_edge_mean=0.5,
+        red_edge_std=0.1,
     )
 
     with (
         mock.patch.object(FocalClassifier, "load_classifier", return_value=mock_model),
         mock.patch.object(
-            FocalClassifier, "get_model_metadata",
+            FocalClassifier,
+            "get_model_metadata",
             return_value={"feature_names": [], "class_labels": [], "model_version": VERSION},
         ),
         mock.patch(
