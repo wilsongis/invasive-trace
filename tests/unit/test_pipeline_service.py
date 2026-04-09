@@ -221,3 +221,89 @@ class TestPipelineRunOrchestration:
         assert pred.model_version == "rf-v0.1.0"
         assert pred.validated is None
         assert 0.0 <= pred.confidence <= 1.0
+
+
+# ---------------------------------------------------------------------------
+# T012 — H3 regression guard: build_feature_vector is called per anomaly
+# ---------------------------------------------------------------------------
+
+
+class TestPipelineStage2FeatureVec:
+    """Verify H3 fix: build_feature_vector is called once per Stage 1 anomaly."""
+
+    def _make_roi(self) -> MagicMock:
+        from geoalchemy2.shape import from_shape  # noqa: PLC0415
+        from shapely.geometry import Polygon  # noqa: PLC0415
+
+        poly = Polygon([(-100, 40), (-99, 40), (-99, 39), (-100, 39), (-100, 40)])
+        roi = MagicMock()
+        roi.id = uuid4()
+        roi.geom = from_shape(poly, srid=4326)
+        return roi
+
+    def _make_spectral_row(
+        self,
+        scene_date: date = date(2024, 6, 15),
+        ndvi: float = 0.6,
+        stac_item: str = "S2A_TEST",
+    ) -> MagicMock:
+        row = MagicMock()
+        row.scene_date = scene_date
+        row.ndvi = ndvi
+        row.endvi = 0.5
+        row.red_edge = 0.4
+        row.is_masked = False
+        row.stac_item = stac_item
+        return row
+
+    @pytest.mark.asyncio
+    async def test_pipeline_stage2_feature_vec_built(self) -> None:
+        """build_feature_vector and stage2.predict are each called once per anomaly."""
+        import numpy as np
+
+        scene_date = date(2024, 6, 15)
+        roi = self._make_roi()
+        roi_id = roi.id
+        scene = self._make_spectral_row(scene_date=scene_date)
+
+        mock_db = AsyncMock()
+        mock_db.get = AsyncMock(return_value=roi)
+        scalars_mock = MagicMock()
+        scalars_mock.all.return_value = [scene]
+        execute_result = MagicMock()
+        execute_result.scalars.return_value = scalars_mock
+        mock_db.execute = AsyncMock(return_value=execute_result)
+        mock_db.add = MagicMock()
+        mock_db.commit = AsyncMock()
+
+        with (
+            patch("app.services.pipeline.AnomalyDetector") as MockS1,
+            patch("app.services.pipeline.FocalClassifier") as MockS2,
+            patch("app.services.pipeline.UNetTexture") as MockS3,
+            patch("app.services.pipeline.build_feature_vector", new_callable=AsyncMock) as MockFV,
+            patch(
+                "app.services.pipeline.extract_sentinel2_patch",
+                new_callable=AsyncMock,
+            ) as MockPatch,
+        ):
+            MockS1.return_value.load.return_value = MockS1.return_value
+            MockS1.return_value.predict.return_value = [(scene_date, 0.8)]
+            MockS2.return_value.load.return_value = MockS2.return_value
+            MockS2.return_value.predict.return_value = ("Bromus tectorum", 0.87)
+            MockS3.return_value.load.return_value = MockS3.return_value
+            MockS3.return_value.infer.return_value = 0.74
+            MockFV.return_value = np.zeros((1, 4), dtype=np.float32)
+            MockPatch.return_value = np.zeros((4, 512, 512), dtype=np.float32)
+
+            from app.services.pipeline import run_pipeline  # noqa: PLC0415
+
+            await run_pipeline(roi_id=roi_id, db=mock_db)
+
+        # H3 guard: build_feature_vector called once (per anomaly), passing spectral values
+        MockFV.assert_called_once()
+        call_kwargs = MockFV.call_args.kwargs
+        assert "ndvi" in call_kwargs
+        assert "lon" in call_kwargs
+
+        # Stage 2 predict was called once with that feature vector
+        MockS2.return_value.predict.assert_called_once()

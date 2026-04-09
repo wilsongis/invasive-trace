@@ -1,24 +1,25 @@
 """Training script for Stage 2 — FocalClassifier (rf-v0.1.0).
 
-Produces models/FocalClassifier/rf-v0.1.0/model.joblib.
+Produces models/FocalClassifier/rf-v0.1.0/classifier.pkl.
 
-Usage (from repository root):
-    uv run python -m app.scripts.train_classifier
+Usage (from repository root)::
+
+    uv run python -m app.scripts.train_classifier \
+        [--output-dir PATH] [--roi-ids UUID,UUID] [--force-retrain]
 
 The script joins spectral_time_series (features) against ground_truth_observations
-(labels), builds a [ndvi, endvi, red_edge, elevation=0.0] feature matrix, trains a
-RandomForestClassifier, and saves the artifact to the registered path so that
-pipeline.run_pipeline() can load it with FocalClassifier().load().
-
-Elevation is set to 0.0 during training because USGS 3DEP is not queried at training
-time (point locations vary per observation). The inference path performs a live lookup.
+(labels), builds a 12-element temporal-aggregate feature matrix (NDVI/ENDVI/Red-Edge
+min/max/mean/std), trains a RandomForestClassifier, and saves all artifacts to the
+registered path so that pipeline.run_pipeline() can load it via FocalClassifier().load().
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import sys
+from datetime import UTC, datetime
 
 import numpy as np
 from sqlalchemy import select
@@ -26,77 +27,235 @@ from sqlalchemy import select
 from app.db import async_session_factory
 from app.ml.stage2_classifier import FocalClassifier
 from app.models.observation import GroundTruthObservation
-from app.models.spectral import SpectralTimeSeries
+from app.services.feature_extractor import FeatureExtractor
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger(__name__)
 
+OUTPUT_DIR = "models/FocalClassifier/rf-v0.1.0"
 
-async def _train() -> None:
+
+async def _train(output_dir: str, roi_ids_arg: list[str] | None, force_retrain: bool) -> None:
+    """Main training coroutine."""
+    skipped_invalid_features = 0
+    skipped_low_scene_count = 0
+    skipped_unknown_species = 0
+
     async with async_session_factory() as session:
-        # Fetch unmasked spectral rows that share a ROI with confirmed observations
-        spectral_result = await session.execute(
-            select(
-                SpectralTimeSeries.ndvi,
-                SpectralTimeSeries.endvi,
-                SpectralTimeSeries.red_edge,
-                SpectralTimeSeries.roi_id,
-            ).where(SpectralTimeSeries.is_masked == False)  # noqa: E712
-        )
-        spectral_rows = spectral_result.all()
+        if roi_ids_arg:
+            from uuid import UUID
 
-        gto_result = await session.execute(
-            select(GroundTruthObservation.species_label, GroundTruthObservation.is_confirmed).where(
-                GroundTruthObservation.is_confirmed
+            roi_ids = [UUID(r) for r in roi_ids_arg]
+        else:
+            # Auto-detect: all ROIs with at least one confirmed observation
+            gto_query = (
+                select(GroundTruthObservation.roi_id)
+                .where(GroundTruthObservation.is_confirmed.is_(True))
+                .distinct()
             )
-        )
-        gto_rows = gto_result.all()
+            gto_result = await session.execute(gto_query)
+            roi_ids = [row[0] for row in gto_result.all()]
 
-    if not spectral_rows or not gto_rows:
+    if not roi_ids:
         logger.warning(
-            "train_classifier: insufficient real data — generating a synthetic artifact for testing"
+            "train_classifier: no ROIs with confirmed observations — generating synthetic artifact"
         )
-        _train_synthetic()
+        _train_synthetic(output_dir)
+        _print_run_summary(
+            status="success",
+            model_version=FocalClassifier.VERSION,
+            sample_count=60,
+            cv_f1_mean=None,
+            cv_f1_std=None,
+            test_f1=None,
+            test_precision=None,
+            test_recall=None,
+            output_dir=output_dir,
+            skipped_invalid=0,
+            skipped_low_scene=0,
+            skipped_unknown=0,
+            note="synthetic",
+        )
         return
 
-    # Build feature matrix using spectral rows; assign label round-robin from ground truth
-    species_labels = [row.species_label for row in gto_rows]
-    features: list[list[float]] = []
-    labels: list[str] = []
+    logger.info("Extracting training cohort for %d ROIs", len(roi_ids))
+    training_cohort = await FeatureExtractor.extract_training_cohort(roi_ids)
 
-    for i, row in enumerate(spectral_rows):
-        features.append(
-            [
-                row.ndvi if row.ndvi is not None else 0.0,
-                row.endvi if row.endvi is not None else 0.0,
-                row.red_edge if row.red_edge is not None else 0.0,
-                0.0,  # elevation — live lookup at inference time
-            ]
+    # Count records skipped during extraction (low-scene-count skip is logged inside
+    # extract_training_cohort; we track what was accepted vs discarded here by comparing
+    # with total confirmed observations).
+    async with async_session_factory() as session:
+        total_obs_query = select(GroundTruthObservation.id).where(
+            GroundTruthObservation.is_confirmed.is_(True),
+            GroundTruthObservation.roi_id.in_(roi_ids),
         )
-        labels.append(species_labels[i % len(species_labels)])
+        total_obs_result = await session.execute(total_obs_query)
+        total_obs_count = len(total_obs_result.all())
 
-    X = np.array(features, dtype=np.float32)
-    classifier = FocalClassifier()
-    classifier.fit(X, labels)
-    classifier.save()
-    logger.info("train_classifier: artifact saved to %s", FocalClassifier.ARTIFACT_PATH)
+    skipped_low_scene_count = total_obs_count - len(training_cohort)
+
+    if not training_cohort:
+        logger.warning(
+            "train_classifier: no training data extracted — generating synthetic artifact"
+        )
+        _train_synthetic(output_dir)
+        _print_run_summary(
+            status="success",
+            model_version=FocalClassifier.VERSION,
+            sample_count=60,
+            cv_f1_mean=None,
+            cv_f1_std=None,
+            test_f1=None,
+            test_precision=None,
+            test_recall=None,
+            output_dir=output_dir,
+            skipped_invalid=skipped_invalid_features,
+            skipped_low_scene=skipped_low_scene_count,
+            skipped_unknown=skipped_unknown_species,
+            note="synthetic",
+        )
+        return
+
+    logger.info("Training classifier with %d samples", len(training_cohort))
+    try:
+        result = FocalClassifier.train_classifier(
+            training_cohort, output_dir, force_retrain=force_retrain
+        )
+    except Exception as exc:
+        logger.error("Training failed: %s", exc)
+        _print_run_summary(
+            status="failure",
+            model_version=FocalClassifier.VERSION,
+            sample_count=len(training_cohort),
+            cv_f1_mean=None,
+            cv_f1_std=None,
+            test_f1=None,
+            test_precision=None,
+            test_recall=None,
+            output_dir=output_dir,
+            skipped_invalid=skipped_invalid_features,
+            skipped_low_scene=skipped_low_scene_count,
+            skipped_unknown=skipped_unknown_species,
+        )
+        raise
+
+    logger.info(
+        "Training completed: samples=%d cv_f1=%.4f test_f1=%.4f",
+        result.sample_count,
+        float(np.mean(result.cv_scores)),
+        result.test_f1,
+    )
+
+    _print_run_summary(
+        status="success",
+        model_version=result.model_version,
+        sample_count=result.sample_count,
+        cv_f1_mean=float(np.mean(result.cv_scores)),
+        cv_f1_std=float(np.std(result.cv_scores)),
+        test_f1=result.test_f1,
+        test_precision=result.test_precision,
+        test_recall=result.test_recall,
+        output_dir=output_dir,
+        skipped_invalid=skipped_invalid_features,
+        skipped_low_scene=skipped_low_scene_count,
+        skipped_unknown=skipped_unknown_species,
+    )
 
 
-def _train_synthetic() -> None:
+def _print_run_summary(
+    *,
+    status: str,
+    model_version: str,
+    sample_count: int,
+    cv_f1_mean: float | None,
+    cv_f1_std: float | None,
+    test_f1: float | None,
+    test_precision: float | None,
+    test_recall: float | None,
+    output_dir: str,
+    skipped_invalid: int,
+    skipped_low_scene: int,
+    skipped_unknown: int,
+    note: str | None = None,
+) -> None:
+    summary: dict = {
+        "status": status,
+        "model_version": model_version,
+        "training_date": datetime.now(tz=UTC).date().isoformat(),
+        "training_sample_count": sample_count,
+        "cv_f1_macro_mean": cv_f1_mean,
+        "cv_f1_macro_std": cv_f1_std,
+        "test_f1_macro": test_f1,
+        "test_precision_macro": test_precision,
+        "test_recall_macro": test_recall,
+        "run_summary": {
+            "skipped_invalid_features": skipped_invalid,
+            "skipped_low_scene_count": skipped_low_scene,
+            "skipped_unknown_species": skipped_unknown,
+        },
+        "output_dir": output_dir,
+    }
+    if note:
+        summary["note"] = note
+    print(json.dumps(summary, indent=2))
+
+
+def _train_synthetic(output_dir: str) -> None:
     """Produce a minimal synthetic artifact for CI / pre-data-ingestion runs."""
+    from uuid import uuid4
+
+    from app.services.feature_extractor import TrainingCohortRecord
+
     rng = np.random.default_rng(42)
     species = ["Bromus tectorum", "Tamarix ramosissima", "Centaurea solstitialis"]
     n = 60
-    X = rng.uniform(0.0, 1.0, (n, 4)).astype(np.float32)
-    y = [species[i % len(species)] for i in range(n)]
-    classifier = FocalClassifier()
-    classifier.fit(X, y)
-    classifier.save()
-    logger.info("train_classifier: synthetic artifact saved to %s", FocalClassifier.ARTIFACT_PATH)
+    # Each of the 12 spectral aggregate features drawn from U(0, 1)
+    raw = rng.uniform(0.0, 1.0, (n, 12)).astype(float)
+
+    cohort = []
+    dummy_roi = uuid4()
+    for i in range(n):
+        r = raw[i]
+        cohort.append(
+            TrainingCohortRecord(
+                roi_id=dummy_roi,
+                species_label=species[i % len(species)],
+                ndvi_min=r[0],
+                ndvi_max=r[1],
+                ndvi_mean=r[2],
+                ndvi_std=r[3],
+                endvi_min=r[4],
+                endvi_max=r[5],
+                endvi_mean=r[6],
+                endvi_std=r[7],
+                red_edge_min=r[8],
+                red_edge_max=r[9],
+                red_edge_mean=r[10],
+                red_edge_std=r[11],
+            )
+        )
+    FocalClassifier.train_classifier(cohort, output_dir)
+    logger.info("train_classifier: synthetic artifact saved to %s", output_dir)
 
 
 def main() -> None:
-    asyncio.run(_train())
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Train Stage 2 FocalClassifier")
+    parser.add_argument("--output-dir", default=OUTPUT_DIR, help="Artifact output directory")
+    parser.add_argument(
+        "--roi-ids",
+        default=None,
+        help="Comma-separated ROI UUIDs (auto-detect if omitted)",
+    )
+    parser.add_argument("--force-retrain", action="store_true", help="Overwrite existing artifact")
+    args = parser.parse_args()
+
+    roi_ids_arg = (
+        [r.strip() for r in args.roi_ids.split(",") if r.strip()] if args.roi_ids else None
+    )
+
+    asyncio.run(_train(args.output_dir, roi_ids_arg, args.force_retrain))
 
 
 if __name__ == "__main__":

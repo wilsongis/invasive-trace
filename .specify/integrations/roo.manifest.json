@@ -1,0 +1,18 @@
+{
+  "integration": "roo",
+  "version": "0.5.0",
+  "installed_at": "2026-04-09T04:31:31.158183+00:00",
+  "files": {
+    ".roo/commands/speckit.analyze.md": "0dd76be34a60e3630f3eb8b54e4005035bc98d91e04566282b724453951d975d",
+    ".roo/commands/speckit.checklist.md": "3bfb97f3286265a75f7f9321e79a3d31130a5be213013662fa2e43f22199942a",
+    ".roo/commands/speckit.clarify.md": "0e7aeb5133272ace15629e560d394f9ea1622ca3873409b4d075c6c9f588d890",
+    ".roo/commands/speckit.constitution.md": "89e14df67db5f8a52b8802a6e396b69d3e4badc46e97de804810aaaf439e0d5e",
+    ".roo/commands/speckit.implement.md": "83628415c86ba487b3a083c7a2c0f016c9073abd02c1c7f4a30cff949b6602c0",
+    ".roo/commands/speckit.plan.md": "c27011f790a4595dae4adb74ba848b38de81445d5cfdf5e56be5667043e1b0e7",
+    ".roo/commands/speckit.specify.md": "4fe230f26eb68638d7642695ca46ed7298090e5aa692fcbe556f792511578f52",
+    ".roo/commands/speckit.tasks.md": "a58886f29f75e1a14840007772ddd954742aafb3e03d9d1231bee033e6c1626b",
+    ".roo/commands/speckit.taskstoissues.md": "23f5098f197d2d3512907276c466a4e03b27619721cee85361f30b21289431da",
+    ".specify/integrations/roo/scripts/update-context.ps1": "ee2608b42f5261d54ad4ac2d70ace0966939683954d35ae10c65cfaa472ddea3",
+    ".specify/integrations/roo/scripts/update-context.sh": "268866327178d68f536f72da4adbe55091b15523e378bf974b7e9a2895ffc262"
+  }
+}

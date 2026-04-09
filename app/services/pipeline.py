@@ -143,7 +143,7 @@ async def run_pipeline(roi_id: UUID, db: AsyncSession) -> PipelineRunResponse:
         if row is None:
             continue
 
-        # Stage 2: feature vector + classify
+        # Stage 2: classify using the pre-built 12-element temporal feature vector
         feature_vec = await build_feature_vector(
             ndvi=row.ndvi,
             endvi=row.endvi,

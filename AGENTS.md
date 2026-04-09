@@ -203,6 +203,8 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] Specify Wave 1 spatial infrastructure gate in `specs/004-wave1-spatial-infrastructure-seeding/spec.md`
 - [x] Draft Wave 1 implementation plan in `specs/004-wave1-spatial-infrastructure-seeding/plan.md`
 - [x] Generate Wave 1 executable task list in `specs/004-wave1-spatial-infrastructure-seeding/tasks.md`
+- [x] Specify Stage 2 focal classifier gate in `specs/009-stage2-focal-classifier/spec.md`
+- [x] Create feature branch `009-stage2-focal-classifier`
 
 ### Completed — Pillar I Bootstrap (Wave 0)
 - [x] Scaffold FastAPI app structure: `app/api/`, `app/models/`, `app/services/`
@@ -265,6 +267,13 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Stage 2: Focal classifier training + feature extraction
 - [ ] Stage 3: U-Net inference service
 
+### Completed — Stage 2 Focal Classifier Spec (spec 009)
+    - [x] Author `specs/009-stage2-focal-classifier/spec.md` — feature specification artifact completed
+    - [x] Create `specs/009-stage2-focal-classifier/checklists/requirements.md` — specification quality checklist pass completed
+    - [x] Complete spec package readiness cleanup: normalize CLI flag naming (`--roi-ids`), align artifact naming (`classifier.pkl`), remove template placeholders, and reset pre-implementation readiness checkboxes
+    - [x] Implement Stage 2 Focal Classifier — Phases 1–3 (T001–T019 + T035/T036/T041): `models/FocalClassifier/rf-v0.1.0/` dir, FeatureExtractor + retry_with_backoff, train_classifier (RF + CV + metrics), flatten metadata.json (H1), infer_predictions (production bug fix), run_stage2_inference.py, 22 unit tests + 5 integration tests; pipeline H3 regression guard; SC-001 ≥99% coverage assertion
+    - [x] Quality gate (T041): ruff clean, 135 passed / 2 skipped (unit + Stage 2 integration); DB integration tests excluded (require PostGIS container)
+
 ### Completed — Pillar IV: HITL Dashboard (Wave 4)
 - [x] `PATCH /api/v1/predictions/{id}/validate` endpoint in `app/api/v1/predictions.py` with `ValidationRequest`/`ValidationResponse` schemas
 - [x] `check_retrain_trigger()` in `app/services/retrain_trigger.py` with `RETRAIN_THRESHOLD = 50` and `RETRAINING_TRIGGERED` log emission
@@ -273,4 +282,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] `just verify` gate — 0 lint errors, 89 passed, 2 skipped
 
 ---
-⏱️ **State:** Wave 0 + Wave 1 + Wave 1.5 + Pillar II Remote Sensing + Wave 3 AI Execution Chain + Wave 4 HITL Dashboard complete; quality gate passing (`just verify`: ruff clean, pytest 143 passed/2 skipped) | 🧠 **Memory:** Updated v2.6 | 🛠️ **Platform:** Podman / macOS Universal
+    ⏱️ **State:** Wave 0 + Wave 1 + Wave 1.5 + Pillar II Remote Sensing + Wave 3 AI Execution Chain + Wave 4 HITL Dashboard + Stage 2 Focal Classifier (spec 009 Phases 1–3) complete; quality gate passing (ruff clean, 135 passed/2 skipped); Phases 4–6 US2/US3 tasks in backlog | 🧠 **Memory:** Updated v2.8 | 🛠️ **Platform:** Podman / macOS Universal

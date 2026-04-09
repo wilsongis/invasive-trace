@@ -21,6 +21,7 @@ from app.services import cloud_mask, indices, stac_client
 logger = logging.getLogger(__name__)
 
 REQUIRED_BAND_KEYS = ("B03", "B04", "B05", "B08", "B8A")
+SCL_BAND_KEY = "SCL"
 
 
 @dataclass(slots=True)
@@ -76,9 +77,9 @@ async def run_ingestion(
                 stats.scenes_skipped += 1
                 continue
 
-            qa60_asset = assets.get("QA60")
+            scl_asset = assets.get(SCL_BAND_KEY)
             cloud_cover, is_masked = cloud_mask.compute_cloud_fraction(
-                qa60_asset.href if qa60_asset else None,
+                scl_asset.href if scl_asset else None,
                 roi_bounds,
             )
             ndvi: float | None = None

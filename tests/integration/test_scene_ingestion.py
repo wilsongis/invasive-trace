@@ -47,7 +47,7 @@ def _fake_scene(
         "B05": SimpleNamespace(href=f"memory://{item_id}-B05.tif"),
         "B08": SimpleNamespace(href=f"memory://{item_id}-B08.tif"),
         "B8A": SimpleNamespace(href=f"memory://{item_id}-B8A.tif"),
-        "QA60": SimpleNamespace(href=f"memory://{item_id}-QA60.tif"),
+        "SCL": SimpleNamespace(href=f"memory://{item_id}-SCL.tif"),
     }
     if missing_assets:
         assets.pop("B08")
