@@ -23,8 +23,12 @@ from uuid import UUID
 
 from app.ml.stage2_classifier import VERSION, FocalClassifier
 
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    stream=sys.stdout,
+)
+logger = logging.getLogger("invasive_trace.stage2")
 
 
 async def run_inference(roi_ids: list[str], model_version: str, dry_run: bool = False) -> None:

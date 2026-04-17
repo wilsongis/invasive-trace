@@ -29,8 +29,12 @@ from app.ml.stage2_classifier import FocalClassifier
 from app.models.observation import GroundTruthObservation
 from app.services.feature_extractor import FeatureExtractor
 
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    stream=sys.stdout,
+)
+logger = logging.getLogger("invasive_trace.stage2")
 
 OUTPUT_DIR = "models/FocalClassifier/rf-v0.1.0"
 

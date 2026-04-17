@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     INAT_API_KEY: str = ""
     EDDMAPS_API_KEY: str = ""
     PC_SDK_SUBSCRIPTION_KEY: str = ""
+    GEE_PROJECT: str = ""
+    GEE_ACCESS_TOKEN: str = ""
+    ALPHAEARTH_COLLECTION: str = "GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL"
     LOG_LEVEL: str = "info"
 
     model_config = SettingsConfigDict(

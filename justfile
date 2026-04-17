@@ -119,6 +119,15 @@ seed-data-dry-run:
     uv run python -m app.scripts.seed_observations --dry-run
     @echo "✅ Dry-run seed complete."
 
+# Validate Earth Engine AlphaEarth benchmark access/coverage (Wave 1.5 gate)
+alphaearth-validate year="":
+    @echo "🧪 Validating AlphaEarth benchmark access and annual coverage..."
+    @if [ -z "{{year}}" ]; then \
+        uv run python -m app.scripts.run_alphaearth_benchmark; \
+    else \
+        uv run python -m app.scripts.run_alphaearth_benchmark --year {{year}}; \
+    fi
+
 # Verify standard: run linters, formatters, and tests
 verify: lint test
     @echo "✅ Verification complete! Environment is fully compliant."

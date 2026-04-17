@@ -25,9 +25,9 @@
 
 **Purpose**: Establish the benchmark-only file layout and evidence paths before cohort or model work begins.
 
-- [ ] T001 Create Wave 1.5 benchmark scaffolding in `app/services/alphaearth_client.py`, `app/services/benchmark_dataset.py`, `app/services/alphaearth_benchmark.py`, `app/services/benchmark_report.py`, `app/ml/stage2_alphaearth_benchmark.py`, and `app/scripts/run_alphaearth_benchmark.py`
-- [ ] T002 [P] Add any benchmark-only dependency/configuration placeholders needed in `pyproject.toml` and `.env.example` without changing the production runtime defaults
-- [ ] T003 [P] Add benchmark evidence output path guidance to `docs/research/` or feature-local artifacts for recommendation recording
+- [x] T001 Create Wave 1.5 benchmark scaffolding in `app/services/alphaearth_client.py`, `app/services/benchmark_dataset.py`, `app/services/alphaearth_benchmark.py`, `app/services/benchmark_report.py`, `app/ml/stage2_alphaearth_benchmark.py`, and `app/scripts/run_alphaearth_benchmark.py`
+- [x] T002 [P] Add any benchmark-only dependency/configuration placeholders needed in `pyproject.toml` and `.env.example` without changing the production runtime defaults
+- [x] T003 [P] Add benchmark evidence output path guidance to `docs/research/` or feature-local artifacts for recommendation recording
 
 ---
 
@@ -37,10 +37,10 @@
 
 **⚠️ CRITICAL**: No user story work should begin until this phase is complete.
 
-- [ ] T004 Create benchmark-only AlphaEarth access wrapper in `app/services/alphaearth_client.py` with logged skip behavior for auth, quota, export, and coverage failures
-- [ ] T005 [P] Create benchmark cohort definition and split-alignment helpers in `app/services/benchmark_dataset.py` using existing ROI/observation inputs without schema changes
-- [ ] T006 [P] Create experimental Stage 2 benchmark wrapper in `app/ml/stage2_alphaearth_benchmark.py` using model version `alphaearth-benchmark-v0.1.0`
-- [ ] T007 Create benchmark orchestration skeleton in `app/services/alphaearth_benchmark.py` that runs baseline and benchmark variants against identical cohort definitions
+- [x] T004 Create benchmark-only AlphaEarth access wrapper in `app/services/alphaearth_client.py` with logged skip behavior for auth, quota, export, and coverage failures
+- [x] T005 [P] Create benchmark cohort definition and split-alignment helpers in `app/services/benchmark_dataset.py` using existing ROI/observation inputs without schema changes
+- [x] T006 [P] Create experimental Stage 2 benchmark wrapper in `app/ml/stage2_alphaearth_benchmark.py` using model version `alphaearth-benchmark-v0.1.0`
+- [x] T007 Create benchmark orchestration skeleton in `app/services/alphaearth_benchmark.py` that runs baseline and benchmark variants against identical cohort definitions
 
 **Checkpoint**: Foundation ready — user story implementation can now proceed.
 
@@ -54,14 +54,14 @@
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Add unit tests in `tests/unit/test_alphaearth_client.py` covering success, auth failure, quota failure, and no-coverage skip behavior
-- [ ] T009 [P] [US1] Add unit tests in `tests/unit/test_benchmark_dataset.py` covering ROI/year cohort assembly and split alignment with baseline labels
+- [x] T008 [P] [US1] Add unit tests in `tests/unit/test_alphaearth_client.py` covering success, auth failure, quota failure, and no-coverage skip behavior
+- [x] T009 [P] [US1] Add unit tests in `tests/unit/test_benchmark_dataset.py` covering ROI/year cohort assembly and split alignment with baseline labels
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement AlphaEarth access and availability reporting in `app/services/alphaearth_client.py`
-- [ ] T011 [US1] Implement cohort assembly and baseline split reuse in `app/services/benchmark_dataset.py`
-- [ ] T012 [US1] Add CLI wiring in `app/scripts/run_alphaearth_benchmark.py` to run benchmark input assembly for a selected ROI/year cohort
+- [x] T010 [US1] Implement AlphaEarth access and availability reporting in `app/services/alphaearth_client.py`
+- [x] T011 [US1] Implement cohort assembly and baseline split reuse in `app/services/benchmark_dataset.py`
+- [x] T012 [US1] Add CLI wiring in `app/scripts/run_alphaearth_benchmark.py` to run benchmark input assembly for a selected ROI/year cohort
 
 **Checkpoint**: User Story 1 is complete when a matched benchmark cohort can be assembled or skipped cleanly.
 
@@ -75,14 +75,14 @@
 
 ### Tests for User Story 2
 
-- [ ] T013 [P] [US2] Add unit tests in `tests/unit/test_alphaearth_benchmark.py` for matched baseline-vs-benchmark evaluation behavior and metric aggregation
-- [ ] T014 [P] [US2] Add integration coverage in `tests/integration/test_alphaearth_benchmark_workflow.py` for end-to-end benchmark execution on a representative mocked cohort
+- [x] T013 [P] [US2] Add unit tests in `tests/unit/test_alphaearth_benchmark.py` for matched baseline-vs-benchmark evaluation behavior and metric aggregation
+- [x] T014 [P] [US2] Add integration coverage in `tests/integration/test_alphaearth_benchmark_workflow.py` for end-to-end benchmark execution on a representative mocked cohort
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Implement the benchmark classifier wrapper in `app/ml/stage2_alphaearth_benchmark.py`
-- [ ] T016 [US2] Implement baseline-vs-benchmark orchestration in `app/services/alphaearth_benchmark.py`
-- [ ] T017 [US2] Extend `app/scripts/run_alphaearth_benchmark.py` to execute both variants and emit side-by-side precision, recall, F1, runtime, and coverage outputs
+- [x] T015 [US2] Implement the benchmark classifier wrapper in `app/ml/stage2_alphaearth_benchmark.py`
+- [x] T016 [US2] Implement baseline-vs-benchmark orchestration in `app/services/alphaearth_benchmark.py`
+- [x] T017 [US2] Extend `app/scripts/run_alphaearth_benchmark.py` to execute both variants and emit side-by-side precision, recall, F1, runtime, and coverage outputs
 
 **Checkpoint**: User Story 2 is complete when a matched comparison run completes and reports side-by-side results.
 
@@ -96,13 +96,13 @@
 
 ### Tests for User Story 3
 
-- [ ] T018 [P] [US3] Add unit tests in `tests/unit/test_benchmark_report.py` for recommendation generation from benchmark metrics and operational findings
+- [x] T018 [P] [US3] Add unit tests in `tests/unit/test_benchmark_report.py` for recommendation generation from benchmark metrics and operational findings
 
 ### Implementation for User Story 3
 
-- [ ] T019 [US3] Implement recommendation/report generation in `app/services/benchmark_report.py`
-- [ ] T020 [US3] Persist benchmark summary evidence in `docs/research/alphaearth-benchmark-report.md` or a feature-local report artifact under `specs/003-alphaearth-benchmark/`
-- [ ] T021 [US3] Update `app/scripts/run_alphaearth_benchmark.py` to emit the go/no-go recommendation artifact at the end of a completed benchmark run
+- [x] T019 [US3] Implement recommendation/report generation in `app/services/benchmark_report.py`
+- [x] T020 [US3] Persist benchmark summary evidence in `docs/research/alphaearth-benchmark-report.md` or a feature-local report artifact under `specs/003-alphaearth-benchmark/`
+- [x] T021 [US3] Update `app/scripts/run_alphaearth_benchmark.py` to emit the go/no-go recommendation artifact at the end of a completed benchmark run
 
 **Checkpoint**: User Story 3 is complete when the benchmark produces an auditable decision record.
 
@@ -112,10 +112,10 @@
 
 **Purpose**: Final validation and governance updates after the benchmark planning set exists.
 
-- [ ] T022 [P] Confirm no benchmark task modifies the contract-locked canonical schema without a separate migration-backed feature
-- [ ] T023 [P] Run `just verify` and resolve benchmark-planning or test regressions
-- [ ] T024 Record benchmark recommendation status in `AGENTS.md` Section 9 after the first completed benchmark run
-- [ ] T025 Validate the feature artifacts remain aligned: `spec.md`, `plan.md`, `tasks.md`, `AGENTS.md`, and `.specify/memory/constitution.md`
+- [x] T022 [P] Confirm no benchmark task modifies the contract-locked canonical schema without a separate migration-backed feature
+- [x] T023 [P] Run `just verify` and resolve benchmark-planning or test regressions
+- [x] T024 Record benchmark recommendation status in `AGENTS.md` Section 9 after the first completed benchmark run
+- [x] T025 Validate the feature artifacts remain aligned: `spec.md`, `plan.md`, `tasks.md`, `AGENTS.md`, and `.specify/memory/constitution.md`
 
 ---
 

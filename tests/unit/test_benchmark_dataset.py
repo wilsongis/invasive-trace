@@ -1,91 +1,101 @@
-"""Unit tests for benchmark dataset assembly."""
+"""Unit tests for benchmark cohort assembly and deterministic split alignment."""
 
 from __future__ import annotations
 
-import numpy as np
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
+
 import pytest
 
-from app.services.benchmark_dataset import BenchmarkCohort, BenchmarkDatasetBuilder
+from app.services.benchmark_dataset import align_train_test_split, assemble_benchmark_cohort
 
 
-class TestBenchmarkDatasetBuilder:
-    """Tests for BenchmarkDatasetBuilder cohort assembly and splits."""
+class TestAlignTrainTestSplit:
+    def test_split_is_deterministic_for_same_seed(self) -> None:
+        ids = [uuid4() for _ in range(12)]
 
-    def test_build_cohort_basic(self) -> None:
-        """Cohort should be built from feature matrix and labels."""
-        builder = BenchmarkDatasetBuilder()
-        X = np.array([[0.1, 0.2, 0.3, 0.4], [0.5, 0.6, 0.7, 0.8]])
-        labels = ["species_a", "species_b"]
+        split_a = align_train_test_split(ids, test_fraction=0.25, split_seed=99)
+        split_b = align_train_test_split(ids, test_fraction=0.25, split_seed=99)
 
-        cohort = builder.build_cohort("roi-1", 2024, X, labels)
+        assert split_a == split_b
 
-        assert cohort.roi_id == "roi-1"
-        assert cohort.year == 2024
-        assert cohort.label_set == ["species_a", "species_b"]
-        assert cohort.X_baseline is not None
-        assert len(cohort.X_baseline) == 2
-        assert not cohort.is_split
+    def test_split_changes_with_seed(self) -> None:
+        ids = [uuid4() for _ in range(12)]
 
-    def test_build_cohort_mismatched_lengths(self) -> None:
-        """Should raise ValueError when feature rows != label count."""
-        builder = BenchmarkDatasetBuilder()
-        X = np.array([[0.1, 0.2, 0.3, 0.4]])
-        labels = ["species_a", "species_b"]
+        split_a = align_train_test_split(ids, test_fraction=0.25, split_seed=99)
+        split_b = align_train_test_split(ids, test_fraction=0.25, split_seed=123)
 
-        with pytest.raises(ValueError, match="feature_matrix rows"):
-            builder.build_cohort("roi-1", 2024, X, labels)
+        assert split_a != split_b
 
-    def test_build_cohort_empty(self) -> None:
-        """Should raise ValueError for empty feature matrix."""
-        builder = BenchmarkDatasetBuilder()
-        X = np.array([]).reshape(0, 4)
-        labels: list[str] = []
+    def test_single_sample_stays_train(self) -> None:
+        sample_id = uuid4()
 
-        with pytest.raises(ValueError, match="empty feature matrix"):
-            builder.build_cohort("roi-1", 2024, X, labels)
+        split_map = align_train_test_split([sample_id], test_fraction=0.5)
 
-    def test_compute_splits(self) -> None:
-        """Should compute train/test splits with correct sizes."""
-        builder = BenchmarkDatasetBuilder(test_size=0.2)
-        X = np.random.default_rng(42).random((100, 4))
-        labels = ["species_a"] * 50 + ["species_b"] * 50
+        assert split_map[sample_id] == "train"
 
-        cohort = builder.build_cohort("roi-1", 2024, X, labels)
-        cohort = builder.compute_splits(cohort)
+    def test_invalid_fraction_raises(self) -> None:
+        ids = [uuid4(), uuid4()]
 
-        assert cohort.is_split
-        assert cohort.X_train is not None
-        assert cohort.X_test is not None
-        assert cohort.y_train is not None
-        assert cohort.y_test is not None
-        assert len(cohort.y_train) == 80  # 80% of 100
-        assert len(cohort.y_test) == 20  # 20% of 100
+        with pytest.raises(ValueError):
+            align_train_test_split(ids, test_fraction=1.0)
 
-    def test_compute_splits_unlabeled(self) -> None:
-        """Should raise ValueError when y_labels is None."""
-        builder = BenchmarkDatasetBuilder()
-        cohort = BenchmarkCohort(
-            roi_id="roi-1",
-            year=2024,
-            label_set=["species_a"],
-            X_baseline=np.random.default_rng(42).random((10, 4)),
-            y_labels=None,
+
+class TestAssembleBenchmarkCohort:
+    @pytest.mark.asyncio
+    async def test_assemble_cohort_uses_roi_year_rows_and_returns_counts(self) -> None:
+        roi_id = uuid4()
+        roi = SimpleNamespace(id=roi_id, geom=object())
+
+        row_a = SimpleNamespace(id=uuid4(), species_label="Bromus tectorum", lon=-101.0, lat=35.0)
+        row_b = SimpleNamespace(id=uuid4(), species_label="Bromus tectorum", lon=-101.1, lat=35.1)
+        row_c = SimpleNamespace(
+            id=uuid4(),
+            species_label="Tamarix ramosissima",
+            lon=-101.2,
+            lat=35.2,
         )
 
-        with pytest.raises(ValueError, match="X_baseline and y_labels"):
-            builder.compute_splits(cohort)
+        session = AsyncMock()
+        session.get = AsyncMock(return_value=roi)
+        execute_result = MagicMock()
+        execute_result.all.return_value = [row_a, row_b, row_c]
+        session.execute = AsyncMock(return_value=execute_result)
 
-    def test_compute_splits_single_class(self) -> None:
-        """Should handle single-class labels without stratification error."""
-        builder = BenchmarkDatasetBuilder()
-        X = np.random.default_rng(42).random((10, 4))
-        labels = ["species_a"] * 10
+        cohort = await assemble_benchmark_cohort(
+            session=session,
+            roi_id=roi_id,
+            year=2024,
+            test_fraction=0.34,
+            split_seed=11,
+        )
 
-        cohort = builder.build_cohort("roi-1", 2024, X, labels)
-        cohort = builder.compute_splits(cohort)
+        assert cohort.roi_id == roi_id
+        assert cohort.year == 2024
+        assert cohort.sample_count == 3
+        assert cohort.train_count + cohort.test_count == 3
+        assert cohort.labels == ["Bromus tectorum", "Tamarix ramosissima"]
+        assert all(sample.split in {"train", "test"} for sample in cohort.samples)
 
-        assert cohort.is_split
-        assert cohort.y_train is not None
-        assert cohort.y_test is not None
-        assert len(cohort.y_train) > 0
-        assert len(cohort.y_test) > 0
+    @pytest.mark.asyncio
+    async def test_assemble_cohort_raises_when_roi_missing(self) -> None:
+        session = AsyncMock()
+        session.get = AsyncMock(return_value=None)
+
+        with pytest.raises(ValueError, match="ROI"):
+            await assemble_benchmark_cohort(session=session, roi_id=uuid4(), year=2024)
+
+    @pytest.mark.asyncio
+    async def test_assemble_cohort_raises_when_no_rows(self) -> None:
+        roi_id = uuid4()
+        roi = SimpleNamespace(id=roi_id, geom=object())
+
+        session = AsyncMock()
+        session.get = AsyncMock(return_value=roi)
+        execute_result = MagicMock()
+        execute_result.all.return_value = []
+        session.execute = AsyncMock(return_value=execute_result)
+
+        with pytest.raises(ValueError, match="No labeled observations"):
+            await assemble_benchmark_cohort(session=session, roi_id=roi_id, year=2024)
