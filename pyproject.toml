@@ -30,6 +30,7 @@ dependencies = [
     # Dev / Test
     "pytest",
     "pytest-asyncio",
+    "mempalace>=3.3.0",
 ]
 
 [project.optional-dependencies]
