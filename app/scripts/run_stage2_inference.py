@@ -81,6 +81,21 @@ async def run_inference(roi_ids: list[str], model_version: str, dry_run: bool = 
         total_time,
     )
 
+    # T032: Structured run logging
+    logger.info(
+        "stage2_inference_summary",
+        extra={
+            "status": "success" if result.predictions else "partial",
+            "model_version": model_version,
+            "inference_date": datetime.now(tz=UTC).date().isoformat(),
+            "run_summary": {
+                "roi_results": roi_results,
+                "total_predictions_written": total_predictions,
+                "total_inference_time_sec": round(total_time, 4),
+            },
+        },
+    )
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Stage 2 FocalClassifier inference")

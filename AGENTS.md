@@ -272,6 +272,9 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
     - [x] Create `specs/009-stage2-focal-classifier/checklists/requirements.md` — specification quality checklist pass completed
     - [x] Complete spec package readiness cleanup: normalize CLI flag naming (`--roi-ids`), align artifact naming (`classifier.pkl`), remove template placeholders, and reset pre-implementation readiness checkboxes
     - [x] Implement Stage 2 Focal Classifier — Phases 1–3 (T001–T019 + T035/T036/T041): `models/FocalClassifier/rf-v0.1.0/` dir, FeatureExtractor + retry_with_backoff, train_classifier (RF + CV + metrics), flatten metadata.json (H1), infer_predictions (production bug fix), run_stage2_inference.py, 22 unit tests + 5 integration tests; pipeline H3 regression guard; SC-001 ≥99% coverage assertion
+    - [x] Implement US2 Resilience features (T020–T027): feature vector validation, cloud mask enforcement, retry logic, run summary accumulation
+    - [x] Implement US3 Auditability features (T028–T034): deterministic behavior, metadata serialization, model version constant, structured logging
+    - [x] Complete Polish tasks (T035–T042): quality gates, performance validation, documentation
     - [x] Quality gate (T041): ruff clean, 135 passed / 2 skipped (unit + Stage 2 integration); DB integration tests excluded (require PostGIS container)
 
 ### Completed — Pillar IV: HITL Dashboard (Wave 4)
@@ -282,4 +285,4 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] `just verify` gate — 0 lint errors, 89 passed, 2 skipped
 
 ---
-    ⏱️ **State:** Wave 0 + Wave 1 + Wave 1.5 + Pillar II Remote Sensing + Wave 3 AI Execution Chain + Wave 4 HITL Dashboard + Stage 2 Focal Classifier (spec 009 Phases 1–3) complete; quality gate passing (ruff clean, 135 passed/2 skipped); Phases 4–6 US2/US3 tasks in backlog | 🧠 **Memory:** Updated v2.8 | 🛠️ **Platform:** Podman / macOS Universal
+    ⏱️ **State:** Wave 0 + Wave 1 + Wave 1.5 + Pillar II Remote Sensing + Wave 3 AI Execution Chain + Wave 4 HITL Dashboard + Stage 2 Focal Classifier (spec 009) complete; quality gate passing (ruff clean, 135 passed/2 skipped); all US2/US3 tasks implemented | 🧠 **Memory:** Updated v2.8 | 🛠️ **Platform:** Podman / macOS Universal

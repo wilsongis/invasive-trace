@@ -146,6 +146,27 @@ async def _train(output_dir: str, roi_ids_arg: list[str] | None, force_retrain: 
         result.test_f1,
     )
 
+    # T032: Structured run logging
+    logger.info(
+        "stage2_train_summary",
+        extra={
+            "status": "success",
+            "model_version": result.model_version,
+            "training_date": datetime.now(tz=UTC).date().isoformat(),
+            "training_sample_count": result.sample_count,
+            "cv_f1_macro_mean": float(np.mean(result.cv_scores)),
+            "cv_f1_macro_std": float(np.std(result.cv_scores)),
+            "test_f1_macro": result.test_f1,
+            "test_precision_macro": result.test_precision,
+            "test_recall_macro": result.test_recall,
+            "run_summary": {
+                "skipped_invalid_features": skipped_invalid_features,
+                "skipped_low_scene_count": skipped_low_scene_count,
+                "skipped_unknown_species": skipped_unknown_species,
+            },
+        },
+    )
+
     _print_run_summary(
         status="success",
         model_version=result.model_version,

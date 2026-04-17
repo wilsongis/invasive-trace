@@ -261,6 +261,21 @@ class FeatureExtractor:
                     skip_reasons["skipped_invalid_features"] += 1
                     continue
 
+                # T021: Enforce cloud-mask filter - already implemented in query with is_masked = FALSE
+                # All queries against spectral_time_series already include WHERE is_masked = FALSE
+                # T021: Warn if contributing scene count drops to 0 for a candidate after masking
+                # All queries against spectral_time_series already include WHERE is_masked = FALSE
+                # T021: Warn if contributing scene count drops to 0 for a candidate after masking
+                if len(valid_rows) == 0:
+                    logger.warning(
+                        "extract_training_cohort: skipping observation %s "
+                        "(no unmasked scenes in temporal window)",
+                        gto_row.id,
+                    )
+                    skip_reasons.setdefault("skipped_cloud_masked", 0)
+                    skip_reasons["skipped_cloud_masked"] += 1
+                    continue
+
                 cohort.append(
                     TrainingCohortRecord(
                         roi_id=roi_id,
