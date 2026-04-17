@@ -8,6 +8,24 @@
     #sidebar { height: 100vh; overflow-y: auto; }
     .prediction-card { transition: all 0.2s; }
     .prediction-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .location-group { border: 1px solid #e5e7eb; border-radius: 0.5rem; margin-bottom: 1rem; }
+    .location-header {
+        background-color: #f9fafb;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .location-content { padding: 1rem; }
+    .duplicate-count {
+        background-color: #f3f4f6;
+        color: #374151;
+        border-radius: 9999px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
 </style>
 {% endblock %}
 
@@ -37,11 +55,123 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
+    // Function to group predictions by location coordinates
+    function groupPredictionsByLocation(predictions) {
+        const groups = {};
+        
+        predictions.forEach(prediction => {
+            // Check if geometry and coordinates exist
+            if (!prediction.geometry || !prediction.geometry.coordinates || prediction.geometry.coordinates.length < 2) {
+                return;
+            }
+            
+            // Use coordinates to group predictions (longitude, latitude)
+            const lon = prediction.geometry.coordinates[0];
+            const lat = prediction.geometry.coordinates[1];
+            
+            // Round coordinates to avoid floating point precision issues
+            const roundedCoords = `${lon.toFixed(6)},${lat.toFixed(6)}`;
+            
+            if (!groups[roundedCoords]) {
+                groups[roundedCoords] = {
+                    coordinates: [lon, lat],
+                    predictions: []
+                };
+            }
+            
+            groups[roundedCoords].predictions.push(prediction);
+        });
+        
+        return Object.values(groups);
+    }
+
+    // Function to create a summary card for a location group
+    function createLocationGroupCard(group) {
+        // For now, we'll use the first prediction in the group as the representative
+        const firstPrediction = group.predictions[0];
+        const location = firstPrediction.geometry.coordinates;
+        
+        // Create a unique ID for this group
+        const groupId = `group-${location[0]}-${location[1]}`;
+        
+        // Create a summary of all predictions at this location
+        const duplicateCount = group.predictions.length - 1;
+        
+        // Get the most confident prediction (or first one if all same)
+        const mostConfident = group.predictions.reduce((prev, current) =>
+            (prev.properties.confidence > current.properties.confidence) ? prev : current
+        );
+        
+        const validatedBadge = mostConfident.properties.validated === true
+            ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Confirmed</span>'
+            : mostConfident.properties.validated === false
+            ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Rejected</span>'
+            : '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Pending</span>';
+            
+        return `
+            <div class="location-group" id="${groupId}">
+                <div class="location-header">
+                    <span>Location</span>
+                    <span class="duplicate-count">${duplicateCount} duplicate${duplicateCount !== 1 ? 's' : ''}</span>
+                </div>
+                <div class="location-content">
+                    <div class="prediction-card bg-white border border-gray-200 rounded-lg p-4 shadow-sm" id="card-${mostConfident.properties.id}">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-semibold text-gray-900">${mostConfident.properties.species_label}</h3>
+                            ${validatedBadge}
+                        </div>
+                        
+                        <div class="space-y-1 text-sm text-gray-600 mb-3">
+                            <p>Confidence: <span class="font-medium">${mostConfident.properties.confidence.toFixed(2)}</span></p>
+                            <p>Hotspot Score: <span class="font-medium">${mostConfident.properties.hotspot_score !== null ? mostConfident.properties.hotspot_score.toFixed(2) : 'N/A'}</span></p>
+                            <p>Model: <span class="font-mono text-xs">${mostConfident.properties.model_version}</span></p>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button
+                                hx-patch="/api/v1/predictions/${mostConfident.properties.id}/validate/html"
+                                hx-vals='{"validated": true}'
+                                hx-target="#card-${mostConfident.properties.id}"
+                                hx-swap="outerHTML"
+                                class="flex-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors"
+                            >
+                                Confirm
+                            </button>
+                            <button
+                                hx-patch="/api/v1/predictions/${mostConfident.properties.id}/validate/html"
+                                hx-vals='{"validated": false}'
+                                hx-target="#card-${mostConfident.properties.id}"
+                                hx-swap="outerHTML"
+                                class="flex-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition-colors"
+                            >
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     // Fetch predictions from GeoJSON endpoint and render markers
     fetch('/api/v1/predictions')
         .then(response => response.json())
         .then(data => {
             if (data.features && data.features.length > 0) {
+                // Group predictions by location
+                const groupedPredictions = groupPredictionsByLocation(data.features);
+                
+                // Update the sidebar with grouped predictions
+                const sidebar = document.getElementById('prediction-list');
+                let htmlContent = '';
+                
+                groupedPredictions.forEach(group => {
+                    htmlContent += createLocationGroupCard(group);
+                });
+                
+                sidebar.innerHTML = htmlContent;
+                
+                // Render map markers
                 L.geoJSON(data, {
                     onEachFeature: function(feature, layer) {
                         const props = feature.properties;
