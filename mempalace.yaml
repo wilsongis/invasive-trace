@@ -1,0 +1,53 @@
+wing: invasive_trace
+rooms:
+- name: migrations
+  description: Files from migrations/
+  keywords:
+  - migrations
+- name: app
+  description: Files from app/
+  keywords:
+  - app
+- name: planning
+  description: Files from specs/
+  keywords:
+  - planning
+  - specs
+- name: genesis.egg_info
+  description: Files from genesis.egg-info/
+  keywords:
+  - genesis.egg-info
+- name: testing
+  description: Files from tests/
+  keywords:
+  - testing
+  - tests
+- name: backend
+  description: Files from models/
+  keywords:
+  - backend
+  - models
+- name: documentation
+  description: Files from docs/
+  keywords:
+  - documentation
+  - docs
+- name: templates
+  description: Files from templates/
+  keywords:
+  - templates
+- name: chrome_profile_notebooklm
+  description: Files from chrome_profile_notebooklm/
+  keywords:
+  - chrome_profile_notebooklm
+- name: scripts
+  description: Files from scripts/
+  keywords:
+  - scripts
+- name: research
+  description: Files from research/
+  keywords:
+  - research
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

@@ -1,0 +1,43 @@
+{
+	"servers": {
+		"mempalace": {
+			"type": "stdio",
+			"sandboxEnabled": false,
+			"command": "${workspaceFolder}/.venv/bin/python",
+			"args": [
+				"-m",
+				"mempalace.mcp_server"
+			],
+			"cwd": "${workspaceFolder}",
+			"env": {
+				"PYTHONUTF8": "1"
+			}
+		},
+		"my-mcp-server-4f64dcaa": {
+			"type": "stdio",
+			"sandboxEnabled": false,
+			"command": "python",
+			"cwd": "${input:cwd}",
+			"args": [
+				"-m",
+				"mempalace.mcp_server"
+			],
+			"env": {
+				"REDIS_HOST": "${input:redis_hostname}",
+				"REDIS_PORT": 6379
+			}
+		}
+	},
+	"inputs": [
+		{
+			"id": "cwd",
+			"type": "promptString",
+			"description": "Working Directory"
+		},
+		{
+			"id": "redis_hostname",
+			"type": "promptString",
+			"description": "Redis Hostname"
+		}
+	]
+}

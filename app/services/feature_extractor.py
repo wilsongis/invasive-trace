@@ -264,6 +264,7 @@ class FeatureExtractor:
                 # T021: Enforce cloud-mask filter - already implemented in query with is_masked = FALSE
                 # All queries against spectral_time_series already include WHERE is_masked = FALSE
                 # T021: Warn if contributing scene count drops to 0 for a candidate after masking
+                # (already enforced in query)
                 # All queries against spectral_time_series already include WHERE is_masked = FALSE
                 # T021: Warn if contributing scene count drops to 0 for a candidate after masking
                 if len(valid_rows) == 0:
