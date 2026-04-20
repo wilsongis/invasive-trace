@@ -4,9 +4,11 @@ rooms:
   description: Files from migrations/
   keywords:
   - migrations
+  - migrations
 - name: app
   description: Files from app/
   keywords:
+  - app
   - app
 - name: planning
   description: Files from specs/
@@ -16,6 +18,7 @@ rooms:
 - name: genesis.egg_info
   description: Files from genesis.egg-info/
   keywords:
+  - genesis.egg_info
   - genesis.egg-info
 - name: testing
   description: Files from tests/
@@ -36,17 +39,21 @@ rooms:
   description: Files from templates/
   keywords:
   - templates
+  - templates
 - name: chrome_profile_notebooklm
   description: Files from chrome_profile_notebooklm/
   keywords:
+  - chrome_profile_notebooklm
   - chrome_profile_notebooklm
 - name: scripts
   description: Files from scripts/
   keywords:
   - scripts
+  - scripts
 - name: research
   description: Files from research/
   keywords:
+  - research
   - research
 - name: general
   description: Files that don't fit other rooms
