@@ -40,17 +40,18 @@ Meta's Global Canopy Height dataset provides ~10m resolution tree height estimat
 1. **Data Source:** Meta Canopy Height Maps (https://ai.meta.com/ai-for-good/datasets/canopy-height-maps/)
    - Available as GeoTIFF tiles covering the globe at 10m resolution
    - Can be accessed via cloud storage or downloaded for local processing
-2. **Integration Layer:**
+2. **Ingestion Strategy:** **Pre-cache for SGI ROI polygons** — canopy height data will be computed and cached for all SGI study area polygons rather than fetched on-demand. This ensures fast dashboard queries and consistent feature availability for the Stage 2 classifier.
+3. **Integration Layer:**
    - New service: `app/services/canopy_height.py` — tile fetch, mosaic, and zonal statistics
    - Extend `spectral_time_series` or create new `canopy_height_metrics` table for per-ROI height statistics
    - Add canopy height features to Stage 2 `FeatureExtractor` pipeline
-3. **Schema Impact:**
+4. **Schema Impact:**
    - New table `canopy_height_metrics` OR extend `spectral_time_series` with `canopy_height_mean`, `canopy_height_max`, `canopy_height_std`
    - New API endpoint: `GET /api/v1/rois/{id}/canopy-metrics`
-4. **Dependencies:** Rasterio (already in stack), GeoTIFF I/O, zonal statistics computation
+5. **Dependencies:** Rasterio (already in stack), GeoTIFF I/O, zonal statistics computation
 
 **Risks:**
-- Data volume: Global 10m tiles are large; need tiling/caching strategy for ROI-bounded queries
+- Data volume: Global 10m tiles are large; pre-caching limits scope to SGI study areas only
 - Update frequency: Meta canopy data is annual or less frequent; not real-time
 
 **Recommendation:** Proceed. Create spec 011 for canopy height integration.
@@ -65,7 +66,7 @@ Woody encroachment is a critical grassland degradation metric. Quantifying it wo
 
 **Technical Approach:**
 1. **Woody Pressure Index (WPI)** — composite score derived from:
-   - **Canopy height coverage** (from Meta data): % of ROI pixels with height > threshold (e.g., >3m)
+   - **Canopy height coverage** (from Meta data): % of ROI pixels with height > **8 feet (2.44m)**
    - **Woody spectral signature** (from Sentinel-2): NDVI texture, red-edge ratio, SWIR bands for lignin/cellulose detection
    - **Topographic context** (from USGS 3DEP): elevation, slope, aspect — woody species prefer certain microclimates
    - **Temporal trend**: rate of canopy height increase over time (if multi-temporal canopy data available)
@@ -232,10 +233,10 @@ Pilot counties would provide a focused test area for validation before scaling t
 
 ## 5. Open Questions for SGI Team
 
-1. **Suggestion 1:** Do you need enhanced filtering on ground truth observations (by species, date, ROI)?
-2. **Suggestion 2:** Should canopy height data be ingested on-demand (per ROI) or pre-cached for all study areas?
-3. **Suggestion 3:** What threshold defines "woody" vs "herbaceous" for your ecological models? (e.g., canopy height > 3m?)
-4. **Suggestion 5:** Which states are in scope for the invasive species catalog?
+1. **Suggestion 1:** ~~Do you need enhanced filtering on ground truth observations (by species, date, ROI)?~~ **ANSWERED** — Hold off on filters for now. No changes needed.
+2. **Suggestion 2:** ~~Should canopy height data be ingested on-demand (per ROI) or pre-cached for all study areas?~~ **ANSWERED** — Pre-cache for SGI ROI polygons (locations).
+3. **Suggestion 3:** ~~What threshold defines "woody" vs "herbaceous" for your ecological models?~~ **ANSWERED** — Use 8 feet (2.44m) as the canopy height threshold.
+4. **Suggestion 5:** ~~Which states are in scope for the invasive species catalog?~~ **ANSWERED** — 25 states confirmed (TX, LA, MS, AL, GA, FL, SC, NC, VA, TN, AR, OK, KS, MO, KY, WV, MD, DE, NJ, PA, OH, IN, IL, NY, CT). See Section 8.
 5. **Suggestion 6:** ~~Which specific counties should be selected as pilot areas? Please provide state + county names or FIPS codes.~~ **ANSWERED** — see Section 7.
 
 ---
@@ -265,3 +266,39 @@ The following counties have been confirmed as pilot areas for Wave 5.4:
 **Note:** "Montgomery County, YN" was interpreted as Tennessee (TN) since "YN" is not a valid state code. If this is incorrect (e.g., meant to be another state), please clarify.
 
 These three counties will be loaded into the `pilot_counties` table during Wave 5.4 implementation using US Census TIGER/Line boundary data.
+
+---
+
+## 8. SGI Study Area States & Invasive Species Catalog
+
+The following 25 states are confirmed as the SGI study area scope. The invasive species catalog (Wave 5.3) will be populated with species data for these states.
+
+| State | Code | Key Invasive Species |
+| :--- | :--- | :--- |
+| Texas | TX | Chinese tallow, Chinese privet, Japanese honeysuckle, kudzu, Chinese wisteria, giant reed, saltcedar, old world bluestems, King Ranch bluestem, Johnsongrass, glossy privet, chinaberry |
+| Louisiana | LA | Chinese tallow, Chinese privet, Japanese climbing fern, cogongrass, Chinese wisteria, Japanese honeysuckle, kudzu, chinaberry, Chinese parasoltree, nandina, mimosa, saltcedar |
+| Mississippi | MS | Kudzu, cogongrass, Chinese tallow, Chinese privet, Japanese honeysuckle, Chinese wisteria, mimosa, tropical soda apple, torpedograss, privet, sericea lespedeza, tall fescue |
+| Alabama | AL | Cogongrass, Chinese privet, kudzu, Japanese climbing fern, Chinese tallow, mimosa, Chinese wisteria, Japanese honeysuckle, tree-of-heaven, sericea lespedeza, nandina, tallowtree |
+| Georgia | GA | Tree-of-heaven, Chinese privet, Japanese honeysuckle, kudzu, Chinese wisteria, mimosa, autumn olive, English ivy, Chinese tallow, nandina, Japanese climbing fern, Nepalese browntop |
+| Florida | FL | Cogongrass, air potato, coral ardisia, Caesar weed, camphor tree, Chinese tallow, tropical soda apple, skunk vine, rosary pea, melaleuca, downy rose myrtle, earleaf acacia |
+| South Carolina | SC | Chinese privet, Japanese honeysuckle, kudzu, Chinese tallow, tree-of-heaven, autumn olive, multiflora rose, mimosa, Japanese stiltgrass, sericea lespedeza, Nepalese browntop, Chinese silvergrass |
+| North Carolina | NC | Tree-of-heaven, Japanese stiltgrass, Chinese privet, Japanese honeysuckle, kudzu, Chinese wisteria, autumn olive, multiflora rose, mimosa, privet, English ivy, Nepalese browntop |
+| Virginia | VA | Tree-of-heaven, Japanese stiltgrass, garlic mustard, Japanese barberry, bush honeysuckles, Chinese privet, autumn olive, multiflora rose, oriental bittersweet, Japanese knotweed, mile-a-minute, wavyleaf basketgrass |
+| Tennessee | TN | Chinese privet, Japanese honeysuckle, kudzu, tree-of-heaven, mimosa, autumn olive, bush honeysuckles, Japanese stiltgrass, sericea lespedeza, Nepalese browntop, Chinese silvergrass, callery pear |
+| Arkansas | AR | Chinese privet, Japanese honeysuckle, Chinese wisteria, mimosa, English ivy, running bamboo, monkey grass, vinca, tall fescue, Chinese tallow, cogongrass, Bradford pear |
+| Oklahoma | OK | Eastern redcedar, Japanese honeysuckle, Japanese stiltgrass, Johnsongrass, kudzu, mimosa, privet, poison hemlock, beefsteak plant, bull thistle, kochia, tree-of-heaven |
+| Kansas | KS | Sericea lespedeza, old world bluestems, yellow bluestem, Caucasian bluestem, Johnsongrass, saltcedar, autumn olive, bush honeysuckles, black locust, callery pear, leafy spurge, hoary cress |
+| Missouri | MO | Bush honeysuckles, autumn olive, sericea lespedeza, Japanese honeysuckle, tree-of-heaven, garlic mustard, Japanese stiltgrass, callery pear, wintercreeper, oriental bittersweet, Japanese knotweed, privet |
+| Kentucky | KY | Bush honeysuckles, Japanese honeysuckle, tree-of-heaven, autumn olive, callery pear, wintercreeper, garlic mustard, Japanese stiltgrass, privet, sericea lespedeza, kudzu, Japanese knotweed |
+| West Virginia | WV | Tree-of-heaven, garlic mustard, Japanese barberry, Asian bittersweet, autumn olive, bush honeysuckles, Japanese knotweed, Japanese stiltgrass, multiflora rose, privet, Norway maple, cheatgrass |
+| Maryland | MD | Porcelainberry, tree-of-heaven, Japanese stiltgrass, garlic mustard, multiflora rose, Japanese honeysuckle, bush honeysuckles, Japanese barberry, wintercreeper, oriental bittersweet, Japanese knotweed, mile-a-minute |
+| Delaware | DE | Japanese honeysuckle, multiflora rose, autumn olive, bush honeysuckles, Japanese stiltgrass, garlic mustard, oriental bittersweet, porcelainberry, Japanese knotweed, tree-of-heaven, wintercreeper, callery pear |
+| New Jersey | NJ | Japanese stiltgrass, multiflora rose, porcelainberry, Japanese barberry, bush honeysuckles, oriental bittersweet, Japanese knotweed, tree-of-heaven, garlic mustard, autumn olive, wintercreeper, callery pear |
+| Pennsylvania | PA | Japanese knotweed, mile-a-minute, Japanese stiltgrass, garlic mustard, tree-of-heaven, multiflora rose, bush honeysuckles, autumn olive, Japanese barberry, oriental bittersweet, privet, wintercreeper |
+| Ohio | OH | Bush honeysuckles, autumn olive, multiflora rose, garlic mustard, Japanese knotweed, oriental bittersweet, Japanese honeysuckle, reed canary grass, purple loosestrife, callery pear, tree-of-heaven, Japanese stiltgrass |
+| Indiana | IN | Bush honeysuckles, autumn olive, blunt-leaved privet, Japanese honeysuckle, Japanese hops, Japanese knotweed, oriental bittersweet, periwinkle, reed canary grass, callery pear, wintercreeper, tree-of-heaven |
+| Illinois | IL | Amur honeysuckle, Johnson grass, oriental bittersweet, Japanese stiltgrass, garlic mustard, callery pear, Japanese chaff flower, bush honeysuckles, autumn olive, tree-of-heaven, reed canary grass, multiflora rose |
+| New York | NY | Japanese knotweed, oriental bittersweet, garlic mustard, wild parsnip, Japanese barberry, bush honeysuckles, multiflora rose, tree-of-heaven, Japanese stiltgrass, swallow-worts, mugwort, autumn olive |
+| Connecticut | CT | Japanese barberry, oriental bittersweet, Japanese knotweed, Japanese stiltgrass, multiflora rose, tree-of-heaven, garlic mustard, autumn olive, bush honeysuckles, Norway maple, winged euonymus, porcelainberry |
+
+**Note:** New Jersey does not maintain a single official state invasive plant list; the NJ list above is synthesized from NJDEP/NJISST/Rutgers guidance.

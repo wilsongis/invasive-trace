@@ -15,7 +15,7 @@ This plan covers four new waves (5.1–5.4) derived from the SGI team meeting on
 ### Phase 0: Research & Data Acquisition
 - **T001:** Research Meta Canopy Height data format, access patterns, and licensing
 - **T002:** Identify tile coverage for SGI study areas
-- **T003:** Determine ingestion strategy (on-demand vs pre-cache)
+- **T003:** Implement pre-cache strategy for SGI ROI polygons — canopy height data will be computed and stored for all SGI study area polygons
 
 ### Phase 1: Service Implementation
 - **T004:** Create `app/services/canopy_height.py` — tile fetch, mosaic, zonal statistics
@@ -78,7 +78,7 @@ This plan covers four new waves (5.1–5.4) derived from the SGI team meeting on
 
 ### Phase 0: Research & Data Acquisition
 - **T035:** Identify data sources (USDA PLANTS, EDDMapS state lists, extension services)
-- **T036:** Determine which states are in scope for SGI study areas
+- **T036:** Load species data for 25 confirmed SGI states (TX, LA, MS, AL, GA, FL, SC, NC, VA, TN, AR, OK, KS, MO, KY, WV, MD, DE, NJ, PA, OH, IN, IL, NY, CT)
 - **T037:** Design species label normalization strategy
 
 ### Phase 1: Service Implementation

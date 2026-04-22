@@ -8,7 +8,7 @@
 
 - [ ] **W5.1-T001:** Research Meta Canopy Height data format, access patterns, and licensing
 - [ ] **W5.1-T002:** Identify tile coverage for SGI study areas
-- [ ] **W5.1-T003:** Determine ingestion strategy (on-demand vs pre-cache)
+- [ ] **W5.1-T003:** Implement pre-cache strategy for SGI ROI polygons — canopy height data will be computed and stored for all SGI study area polygons
 - [ ] **W5.1-T004:** Create `app/services/canopy_height.py` — tile fetch, mosaic, zonal statistics
 - [ ] **W5.1-T005:** Implement canopy height metric computation (mean, max, std, coverage %)
 - [ ] **W5.1-T006:** Add retry-safe HTTP/GeoTIFF I/O with backoff
@@ -51,7 +51,7 @@
 ## Wave 5.3: Invasive Species Catalog
 
 - [ ] **W5.3-T035:** Identify data sources (USDA PLANTS, EDDMapS state lists, extension services)
-- [ ] **W5.3-T036:** Determine which states are in scope for SGI study areas
+- [ ] **W5.3-T036:** Load species data for 25 confirmed SGI states (TX, LA, MS, AL, GA, FL, SC, NC, VA, TN, AR, OK, KS, MO, KY, WV, MD, DE, NJ, PA, OH, IN, IL, NY, CT)
 - [ ] **W5.3-T037:** Design species label normalization strategy
 - [ ] **W5.3-T038:** Create `app/services/species_catalog.py` — catalog load, query, filter
 - [ ] **W5.3-T039:** Implement state-based species filtering
