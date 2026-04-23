@@ -1,103 +1,62 @@
-# Tasks: SGI Meeting Enhancement Suggestions
+# SGI Way Enhancements – Implementation Tasks
 
-> **Executable Task List** — Wave 5 enhancement tasks derived from SGI team meeting.
+The following tasks are organized by SGI pillar.  Each task follows the standard checklist format used throughout the repository.
 
----
+## Phase 0 – Foundations
 
-## Wave 5.1: Canopy Height Integration
+- [ ] T001 Create `restoration_protocols` table migration (SQLAlchemy + Alembic)
+- [ ] T002 Add API router `app/api/v1/protocols.py` with CRUD endpoints
+- [ ] T003 Add `project_metrics` table migration for KPI storage
+- [ ] T004 Add `/api/v1/metrics` endpoint returning KPI JSON
+- [ ] T005 Extend `app/config.py` with `MAX_CONCURRENT_JOBS`, `TILE_SIZE`, and `RANDOM_SEED` settings
 
-- [ ] **W5.1-T001:** Research Meta Canopy Height data format, access patterns, and licensing
-- [ ] **W5.1-T002:** Identify tile coverage for SGI study areas
-- [ ] **W5.1-T003:** Implement pre-cache strategy for SGI ROI polygons — canopy height data will be computed and stored for all SGI study area polygons
-- [ ] **W5.1-T004:** Create `app/services/canopy_height.py` — tile fetch, mosaic, zonal statistics
-- [ ] **W5.1-T005:** Implement canopy height metric computation (mean, max, std, coverage %)
-- [ ] **W5.1-T006:** Add retry-safe HTTP/GeoTIFF I/O with backoff
-- [ ] **W5.1-T007:** Create Alembic migration for `canopy_height_metrics` table
-- [ ] **W5.1-T008:** Create ORM model `app/models/canopy.py`
-- [ ] **W5.1-T009:** Create Pydantic schemas `app/schemas/canopy.py`
-- [ ] **W5.1-T010:** Implement `GET /api/v1/rois/{id}/canopy-metrics` endpoint
-- [ ] **W5.1-T011:** Extend `app/services/feature_extractor.py` to include canopy height features
-- [ ] **W5.1-T012:** Update Stage 2 training pipeline to accept canopy features
-- [ ] **W5.1-T013:** Add canopy metrics to inference pipeline
-- [ ] **W5.1-T014:** Unit tests for canopy height service
-- [ ] **W5.1-T015:** Integration tests for canopy metrics endpoint
-- [ ] **W5.1-T016:** End-to-end pipeline test with canopy features
+## Phase 1 – Standardized & Provable
 
----
+- [ ] T006 Implement service layer `app/services/protocol_service.py` for protocol management
+- [ ] T007 Implement service `app/services/metrics_service.py` to compute and store KPIs after each project run
+- [ ] T008 Write unit tests for protocol CRUD and metrics endpoint
 
-## Wave 5.2: Woody Pressure Quantification
+## Phase 2 – Repeatable & Efficient
 
-- [ ] **W5.2-T017:** Define Woody Pressure Index (WPI) formula with SGI ecologists
-- [ ] **W5.2-T018:** Determine woody vs herbaceous spectral thresholds
-- [ ] **W5.2-T019:** Validate WPI against known grassland degradation sites
-- [ ] **W5.2-T020:** Create `app/services/woody_pressure.py` — WPI computation
-- [ ] **W5.2-T021:** Implement multi-source WPI: canopy height + Sentinel-2 spectral + topography
-- [ ] **W5.2-T022:** Add temporal WPI trend computation (if multi-temporal canopy available)
-- [ ] **W5.2-T023:** Create Alembic migration: add `woody_pressure_score` to `invasion_predictions`
-- [ ] **W5.2-T024:** Update ORM model `app/models/prediction.py`
-- [ ] **W5.2-T025:** Update Pydantic schemas `app/schemas/prediction.py`
-- [ ] **W5.2-T026:** Implement `GET /api/v1/rois/{id}/woody-pressure` endpoint
-- [ ] **W5.2-T027:** Extend Stage 3 pipeline to compute dual scores (invasive + woody)
-- [ ] **W5.2-T028:** Update `app/services/pipeline.py` orchestration
-- [ ] **W5.2-T029:** Update `dashboard.html` to display dual scores
-- [ ] **W5.2-T030:** Update `prediction_card.html` partial with woody pressure indicator
-- [ ] **W5.2-T031:** Add WPI visualization (color-coded or progress bar)
-- [ ] **W5.2-T032:** Unit tests for woody pressure service
-- [ ] **W5.2-T033:** Integration tests for woody pressure endpoint
-- [ ] **W5.2-T034:** Dashboard rendering tests
+- [ ] T009 Create deterministic pipeline wrapper `app/services/deterministic_runner.py` (sets seed, logs provenance)
+- [ ] T010 Add provenance logger `app/services/provenance_logger.py` (model version, hyper‑params, input hash)
+- [ ] T011 Refactor existing ML pipelines to use the deterministic runner
+- [ ] T012 Implement async job queue using `asyncio.Semaphore` respecting `MAX_CONCURRENT_JOBS`
+- [ ] T013 Add UI shortcuts in `app/templates/dashboard.html` for common actions (e.g., bulk ROI upload)
 
----
+## Phase 3 – Scalable
 
-## Wave 5.3: Invasive Species Catalog
+- [ ] T014 Add spatial tiling utility `app/services/tiling.py` (configurable tile size)
+- [ ] T015 Modify scene ingestion pipeline to process tiles independently
+- [ ] T016 Update `compose.yml` to expose multiple FastAPI replicas behind a load balancer (e.g., Traefik)
+- [ ] T017 Add integration tests for tiled processing and load‑balanced deployment
 
-- [ ] **W5.3-T035:** Identify data sources (USDA PLANTS, EDDMapS state lists, extension services)
-- [ ] **W5.3-T036:** Load species data for 25 confirmed SGI states (TX, LA, MS, AL, GA, FL, SC, NC, VA, TN, AR, OK, KS, MO, KY, WV, MD, DE, NJ, PA, OH, IN, IL, NY, CT)
-- [ ] **W5.3-T037:** Design species label normalization strategy
-- [ ] **W5.3-T038:** Create `app/services/species_catalog.py` — catalog load, query, filter
-- [ ] **W5.3-T039:** Implement state-based species filtering
-- [ ] **W5.3-T040:** Add species deduplication and normalization
-- [ ] **W5.3-T041:** Create Alembic migration for `invasive_species_catalog` table
-- [ ] **W5.3-T042:** Create ORM model `app/models/species_catalog.py`
-- [ ] **W5.3-T043:** Create Pydantic schemas `app/schemas/species.py`
-- [ ] **W5.3-T044:** Implement `GET /api/v1/species?state=TX` endpoint
-- [ ] **W5.3-T045:** Implement `POST /api/v1/species/sync` endpoint (admin)
-- [ ] **W5.3-T046:** Extend Stage 2 `FeatureExtractor` to filter species by ROI state
-- [ ] **W5.3-T047:** Add species catalog lookup to inference pipeline
-- [ ] **W5.3-T048:** Unit tests for species catalog service
-- [ ] **W5.3-T049:** Integration tests for species API endpoints
-- [ ] **W5.3-T050:** Pipeline integration test with species filtering
+## Phase 4 – Innovative
+
+- [ ] T018 Create plug‑in framework skeleton `app/plugins/__init__.py` and loader `app/plugins/loader.py`
+- [ ] T019 Add sandbox endpoint `app/api/v1/sandbox.py` to execute a selected plug‑in on supplied data
+- [ ] T020 Write a dummy plug‑in `app/plugins/example_plugin.py` that returns a static prediction
+- [ ] T021 Add tests for plug‑in discovery and sandbox execution
+
+## Phase 5 – GEDI Integration (Provable + Innovative)
+
+- [ ] T025 [P] Create `gedi_observations` table migration in `migrations/versions/0005_gedi_observations.py`
+- [ ] T026 [P] Add SQLAlchemy ORM model `app/models/gedi_observation.py` (footprint_id, acquisition_date, canopy_height, biomass, quality_flag, geom)
+- [ ] T027 Implement GEDI client `app/services/gedi_client.py` — Earthdata auth, Level‑2A HDF5 fetch, and parse to records
+- [ ] T028 Implement GEDI ingestion script `app/scripts/ingest_gedi.py` — reads HDF5 files, upserts into `gedi_observations`
+- [ ] T029 Add Pydantic schemas `app/schemas/gedi.py` (GEDIRecord, GEDIIngestRequest, GEDIIngestResponse)
+- [ ] T030 Add API endpoint `app/api/v1/gedi.py` — `POST /api/v1/gedi/ingest` and `GET /api/v1/gedi/observations`
+- [ ] T031 Extend `/api/v1/metrics` to include GEDI‑derived KPIs (avg canopy height change, biomass delta per ROI)
+- [ ] T032 [P] Write unit tests for GEDI client parsing and schema validation in `tests/unit/test_gedi_client.py`
+- [ ] T033 Write integration test `tests/integration/test_gedi_ingestion.py` covering upsert and metrics rollup
+- [ ] T034 Update `AGENTS.md` Section 5 with GEDI API contract (Earthdata endpoint, auth, failure modes)
+- [ ] T035 Update `docs/research/02-ARCHITECTURE.md` with GEDI data flow diagram notes
+
+## Phase 6 – Documentation & Checklist
+
+- [ ] T022 Update `docs/research/02-ARCHITECTURE.md` with SGI Way extensions (already added)
+- [ ] T023 Create SGI checklist `specs/010-sgi-enhancements/checklists/requirements.md` using the unit‑test‑for‑requirements style
+- [ ] T024 Review and approve all new API specs in `specs/010-sgi-enhancements/spec.md`
 
 ---
-
-## Wave 5.4: Pilot County Selection
-
-- [ ] **W5.4-T051:** Download US Census TIGER/Line county boundaries
-- [ ] **W5.4-T052:** Get SGI team's pilot county selections (state + county names or FIPS)
-- [ ] **W5.4-T053:** Design pilot county activation workflow
-- [ ] **W5.4-T054:** Create `app/services/pilot_county.py` — county load, query, activation
-- [ ] **W5.4-T055:** Implement ROI-to-county spatial join
-- [ ] **W5.4-T056:** Add pilot county filtering to prediction queries
-- [ ] **W5.4-T057:** Create Alembic migration for `pilot_counties` table
-- [ ] **W5.4-T058:** Create ORM model `app/models/pilot_county.py`
-- [ ] **W5.4-T059:** Create Pydantic schemas `app/schemas/pilot_county.py`
-- [ ] **W5.4-T060:** Implement `GET /api/v1/pilot-counties` endpoint
-- [ ] **W5.4-T061:** Implement `POST /api/v1/pilot-counties` endpoint (admin)
-- [ ] **W5.4-T062:** Add `pilot_county_id` FK to `regions_of_interest`
-- [ ] **W5.4-T063:** Add pilot county filter to dashboard
-- [ ] **W5.4-T064:** Add pilot county summary statistics
-- [ ] **W5.4-T065:** Update prediction card to show pilot county context
-- [ ] **W5.4-T066:** Unit tests for pilot county service
-- [ ] **W5.4-T067:** Integration tests for pilot county endpoints
-- [ ] **W5.4-T068:** Dashboard rendering tests with pilot county filter
-
----
-
-## Summary
-
-| Wave | Tasks | Status |
-| :--- | :--- | :--- |
-| 5.1 — Canopy Height | 16 tasks | Planned |
-| 5.2 — Woody Pressure | 18 tasks | Planned (depends on 5.1) |
-| 5.3 — Species Catalog | 16 tasks | Planned |
-| 5.4 — Pilot Counties | 18 tasks | Planned |
-| **Total** | **68 tasks** | |
+*Generated on 2026‑04‑23.*

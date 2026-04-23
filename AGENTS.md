@@ -121,6 +121,14 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 | **iNaturalist** | `https://api.inaturalist.org/v1/observations` | API Key (env: `INAT_API_KEY`) | Ground truth seeding; taxon filter by invasive list |
 | **EDDMapS** | `https://www.eddmaps.org/api/` | API Key (env: `EDDMAPS_API_KEY`) | Regional occurrence records |
 | **USGS 3DEP** | `https://tnmapi.cr.usgs.gov/api/` | None (public) | Elevation context for topographic modelling |
+| **NASA GEDI (CMR)** | `https://cmr.earthdata.nasa.gov/search` | Earthdata Basic Auth (env: `EARTHDATA_USER` / `EARTHDATA_PASSWORD`) | GEDI Level‑2A canopy height & biomass footprints for restoration KPI measurement |
+
+**GEDI product constants:**
+- Provider: `LPDAAC_ECS`
+- Level‑2A short name: `GEDI02_A` (canopy height, `rh98`, quality flag)
+- Level‑2B short name: `GEDI02_B` (plant area index, cover — future)
+- Quality flag filter: `quality_flag == 1` (high‑quality footprints only)
+- Client stub: `app/services/gedi_client.py`; full implementation requires `h5py` + `httpx`
 
 **Failure Modes — All external API consumers MUST handle:**
 - HTTP 429 (rate limit): exponential backoff, max 3 retries
