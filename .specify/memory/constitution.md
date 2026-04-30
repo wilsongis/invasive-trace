@@ -1,18 +1,11 @@
 <!--
 Sync Impact Report:
-- Version change: 2.0.2 -> 2.1.0
-- List of modified principles:
-  - I. Remote-Sensing & Research-First Protocol [expanded for benchmark-only foundation-model research]
-  - III. Global Tech Stack (NON-NEGOTIABLE) [clarified Planetary Computer production baseline]
-  - V. Resilient-by-Default External API Consumers [expanded to cover approved benchmark sources]
-  - [NEW] VII. Experimental Foundation-Model Benchmark Gate
-- Added sections: VII. Experimental Foundation-Model Benchmark Gate
+- Version change: 2.1.0 -> 2.1.1
+- List of modified principles: none (routine PATCH update)
+- Added sections: none
 - Removed sections: none
-- Templates requiring updates:
-  - none; existing templates remain valid because the amendment adds a feature-scoped benchmark gate rather than changing the default delivery workflow
-- Follow-up TODOs:
-  - Add benchmark planning artifacts under `specs/003-alphaearth-benchmark/`
-  - Record benchmark evidence before proposing any production pipeline promotion
+- Templates requiring updates: none
+- Follow-up TODOs: none
 -->
 # Invasive Trace Constitution
 
@@ -225,4 +218,4 @@ All pull requests and agent task sessions MUST verify compliance with the Global
 Stack (Section III), the Spatial Data Integrity Contract (Section IV), and the
 Anti-Context Rot Protocol (Section II) before marking work complete.
 
-**Version**: 2.1.0 | **Ratified**: 2026-03-27 | **Last Amended**: 2026-03-27
+**Version**: 2.1.1 | **Ratified**: 2026-03-27 | **Last Amended**: 2026-04-30

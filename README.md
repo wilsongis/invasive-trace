@@ -16,6 +16,16 @@ Geospatial AI platform for the **Southern Grassland Institute** — detects, cla
 | **ML: Deep** | PyTorch U-Net (spatial texture / hotspot scoring) |
 | **Container** | Podman + Containerfile |
 | **Automation** | `just` |
+## Esri Integration
+
+Invasive Trace is being integrated with the APSU GIS Center's Esri ecosystem:
+
+- **Visualization:** ArcGIS Dashboards display ML predictions with hotspot scoring and confidence metrics
+- **Field Verification:** Esri's Invasive Vegetation Management solution enables ground truth collection and prediction verification
+- **Integration Pattern:** Database views → Esri Feature Services → ArcGIS frontends
+- **Architecture:** Hybrid approach preserving Invasive Trace's 3-stage AI pipeline (Anomaly Detection → Focal Classification → U-Net Hotspot Scoring)
+
+See [`docs/research/esri-integration-evaluation.md`](docs/research/esri-integration-evaluation.md) for the full evaluation.
 
 ## Quick Start
 
@@ -36,6 +46,7 @@ just seed-data
 ```
 
 The API will be available at `http://localhost:8000`.
+
 
 ## AI Execution Chain
 

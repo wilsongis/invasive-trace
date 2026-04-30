@@ -275,6 +275,14 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [ ] Stage 2: Focal classifier training + feature extraction
 - [ ] Stage 3: U-Net inference service
 
+### Backlog — Esri Integration (spec 011)
+- [ ] Author `specs/011-esri-integration/spec.md` with detailed requirements
+- [ ] Create `treatment_areas` and `species_taxonomy` tables (migration 0006)
+- [ ] Build Esri-compatible database views in `invasive_trace_esri` schema
+- [ ] Register views as ArcGIS Feature Services
+- [ ] Configure ArcGIS Dashboard with Invasive Trace KPIs and hotspot scoring
+- [ ] Deploy Esri Invasive Vegetation Management solution for field verification
+- [x] Update Section 10 with Esri integration architecture (completed)
 ### Completed — Stage 2 Focal Classifier Spec (spec 009)
     - [x] Author `specs/009-stage2-focal-classifier/spec.md` — feature specification artifact completed
     - [x] Create `specs/009-stage2-focal-classifier/checklists/requirements.md` — specification quality checklist pass completed
@@ -293,4 +301,28 @@ CREATE INDEX idx_sts_roi_date ON spectral_time_series (roi_id, scene_date DESC);
 - [x] `just verify` gate — 0 lint errors, 89 passed, 2 skipped
 
 ---
+
+## 10. Esri Integration Architecture
+
+**Strategy:** Hybrid approach preserving Invasive Trace's AI/ML backend while layering Esri tools for visualization and field workflows.
+
+**Integration Pattern:**
+- Invasive Trace writes to PostGIS (`invasive_trace` schema)
+- Read-only views in `invasive_trace_esri` schema
+- Register views as ArcGIS Feature Services
+- Consume in ArcGIS Dashboards (visualization) and Invasive Vegetation Management solution (field verification)
+
+**Esri Tools Mapping:**
+- **ArcGIS Dashboards** → Invasive Trace ML prediction visualization, KPIs, hotspot scoring
+- **Invasive Vegetation Management Solution** → Ground truth collection, field verification of predictions
+- **ArcGIS Field Maps** → Mobile data collection (alternative/complement to solution)
+- **Experience Builder** → Custom API integration (if needed, optional)
+
+**Data Coexistence:**
+- APSU's Esri-enabled PostgreSQL coexists with Invasive Trace's PostGIS tables
+- Separate schemas: `invasive_trace`, `invasive_trace_esri`, `sde`
+- Never let Esri modify Invasive Trace tables directly
+
+---
+
     ⏱️ **State:** Wave 0 + Wave 1 + Wave 1.5 + Pillar II Remote Sensing + Wave 3 AI Execution Chain + Wave 4 HITL Dashboard + Stage 2 Focal Classifier (spec 009) complete; quality gate passing (ruff clean, 135 passed/2 skipped); all US2/US3 tasks implemented | 🧠 **Memory:** Updated v2.8 | 🛠️ **Platform:** Podman / macOS Universal

@@ -13,3 +13,7 @@ __all__ = [
     "RegionOfInterest",
     "SpectralTimeSeries",
 ]
+
+from app.models.gedi_observation import GediObservation
+from app.models.metric import ProjectMetric
+from app.models.protocol import RestorationProtocol

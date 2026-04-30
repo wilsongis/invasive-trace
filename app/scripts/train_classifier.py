@@ -27,6 +27,7 @@ from sqlalchemy import select
 from app.db import async_session_factory
 from app.ml.stage2_classifier import FocalClassifier
 from app.models.observation import GroundTruthObservation
+from app.services.deterministic_runner import run_deterministically
 from app.services.feature_extractor import FeatureExtractor
 
 logging.basicConfig(
@@ -39,6 +40,7 @@ logger = logging.getLogger("invasive_trace.stage2")
 OUTPUT_DIR = "models/FocalClassifier/rf-v0.1.0"
 
 
+@run_deterministically(model_version=FocalClassifier.VERSION, script="_train")
 async def _train(output_dir: str, roi_ids_arg: list[str] | None, force_retrain: bool) -> None:
     """Main training coroutine."""
     skipped_invalid_features = 0

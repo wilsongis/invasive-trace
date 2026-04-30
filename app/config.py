@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     ALPHAEARTH_COLLECTION: str = "GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL"
     LOG_LEVEL: str = "info"
 
+    # SGI Enhancements Constants
+    MAX_CONCURRENT_JOBS: int = 4
+    TILE_SIZE: int = 256
+    RANDOM_SEED: int = 42
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

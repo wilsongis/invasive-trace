@@ -1,7 +1,7 @@
 {
   "integration": "roo",
-  "version": "0.7.4",
-  "installed_at": "2026-04-22T18:17:01.485336+00:00",
+  "version": "0.8.3",
+  "installed_at": "2026-04-30T16:49:42.673125+00:00",
   "files": {
     ".roo/commands/speckit.analyze.md": "699032fdd49afe31d23c7191f3fe7bcb1d14b081fbc94c2287e6ba3a57574fda",
     ".roo/commands/speckit.checklist.md": "d7d691689fe45427c868dcf18ade4df500f0c742a6c91923fefba405d6466dde",

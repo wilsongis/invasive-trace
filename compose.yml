@@ -1,10 +1,33 @@
-# Invasive Trace — Podman Compose Stack
+# Invasive Trace — Podman Compose Stack with Load Balancer
 # Compatible with: podman compose / podman-compose
 # Usage: just start
 
 name: invasive-trace
 
 services:
+
+  # ---------------------------------------------------------------------------
+  # Traefik — Load Balancer
+  # ---------------------------------------------------------------------------
+  traefik:
+    image: traefik:v3.0
+    container_name: invasive-trace-traefik
+    restart: unless-stopped
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - backend
 
   # ---------------------------------------------------------------------------
   # PostGIS 16-3.4 — Spatial database
@@ -36,16 +59,15 @@ services:
       - backend
 
   # ---------------------------------------------------------------------------
-  # FastAPI App — Invasive Trace API server
+  # FastAPI App — Invasive Trace API server (replicated)
   # ---------------------------------------------------------------------------
   app:
     build:
       context: .
       dockerfile: Containerfile
-    container_name: invasive-trace-app
     restart: unless-stopped
     working_dir: /workspace
-    command: ["/app/.venv/bin/python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/workspace/app"]
+    command: ["/app/.venv/bin/python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       # Database connection — matches db service above
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-appuser}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-invasive_trace}
@@ -59,8 +81,6 @@ services:
       PYTHONUNBUFFERED: "1"
       LOG_LEVEL: ${LOG_LEVEL:-info}
       PYTHONPATH: /workspace
-    ports:
-      - "8000:8000"
     volumes:
       # Live-reload source mount for development; keep it separate from the packaged runtime
       - .:/workspace:z
@@ -71,6 +91,18 @@ services:
         condition: service_healthy
     networks:
       - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.invasive-trace.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.invasive-trace.entrypoints=web"
+      - "traefik.http.services.invasive-trace.loadbalancer.server.port=8000"
+    deploy:
+      mode: replicated
+      replicas: 2
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
 
 # ---------------------------------------------------------------------------
 # Volumes

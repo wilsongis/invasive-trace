@@ -1,46 +1,63 @@
-"""Service layer for SGI restoration protocols.
+"""Service layer for SGI restoration protocols."""
 
-This is a minimal implementation that provides the expected async CRUD
-functions.  The actual persistence logic would use SQLAlchemy models and
-Alembic migrations, but for the purpose of getting the codebase to pass
-type‑checking and linting we provide simple stubs that raise a clear
-exception.  Implementations can be added later without changing the API.
-"""
+import uuid
 
-from typing import Optional
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.protocol import ProtocolCreate, ProtocolUpdate, Protocol
+
+from app.models.protocol import RestorationProtocol
+from app.schemas.protocol import Protocol, ProtocolCreate, ProtocolUpdate
 
 
 async def create_protocol(db: AsyncSession, payload: ProtocolCreate) -> Protocol:
-    """Create a new protocol record.
-
-    A real implementation would add a SQLAlchemy model instance to the
-    session and commit.  Here we raise ``NotImplementedError`` to make the
-    missing behaviour explicit.
-    """
-    raise NotImplementedError("Protocol creation not implemented yet")
-
-
-async def get_protocol(db: AsyncSession, protocol_id: int) -> Optional[Protocol]:
-    """Retrieve a protocol by its primary key.
-
-    Returns ``None`` if the protocol does not exist.
-    """
-    raise NotImplementedError("Protocol retrieval not implemented yet")
+    """Create a new protocol record."""
+    db_protocol = RestorationProtocol(
+        name=payload.name, description=payload.description, version=payload.version
+    )
+    db.add(db_protocol)
+    await db.commit()
+    await db.refresh(db_protocol)
+    return Protocol.model_validate(db_protocol)
 
 
-async def update_protocol(db: AsyncSession, protocol_id: int, payload: ProtocolUpdate) -> Optional[Protocol]:
-    """Update an existing protocol.
+async def get_protocol(db: AsyncSession, protocol_id: uuid.UUID) -> Protocol | None:
+    """Retrieve a protocol by its primary key."""
+    result = await db.execute(
+        select(RestorationProtocol).where(RestorationProtocol.id == protocol_id)
+    )
+    db_protocol = result.scalar_one_or_none()
+    if db_protocol:
+        return Protocol.model_validate(db_protocol)
+    return None
 
-    Returns the updated ``Protocol`` or ``None`` if not found.
-    """
-    raise NotImplementedError("Protocol update not implemented yet")
+
+async def update_protocol(
+    db: AsyncSession, protocol_id: uuid.UUID, payload: ProtocolUpdate
+) -> Protocol | None:
+    """Update an existing protocol."""
+    result = await db.execute(
+        select(RestorationProtocol).where(RestorationProtocol.id == protocol_id)
+    )
+    db_protocol = result.scalar_one_or_none()
+
+    if db_protocol:
+        update_data = payload.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_protocol, key, value)
+
+        await db.commit()
+        await db.refresh(db_protocol)
+        return Protocol.model_validate(db_protocol)
+
+    return None
 
 
-async def delete_protocol(db: AsyncSession, protocol_id: int) -> None:
-    """Delete a protocol record.
-
-    Raises ``NotImplementedError`` until a concrete implementation is added.
-    """
-    raise NotImplementedError("Protocol deletion not implemented yet")
+async def delete_protocol(db: AsyncSession, protocol_id: uuid.UUID) -> None:
+    """Delete a protocol record."""
+    result = await db.execute(
+        select(RestorationProtocol).where(RestorationProtocol.id == protocol_id)
+    )
+    db_protocol = result.scalar_one_or_none()
+    if db_protocol:
+        await db.delete(db_protocol)
+        await db.commit()

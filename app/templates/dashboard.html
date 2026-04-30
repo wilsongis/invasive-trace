@@ -26,6 +26,31 @@
         padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
     }
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 80%;
+        max-width: 500px;
+    }
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
 </style>
 {% endblock %}
 
@@ -38,12 +63,67 @@
 
     <!-- Sidebar Container -->
     <div id="sidebar" class="w-96 bg-white border-l border-gray-200 p-4">
-        <h2 class="text-xl font-bold mb-4">Predictions to Review</h2>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">Predictions to Review</h2>
+            <div class="flex gap-2">
+                <button onclick="openBulkUpdateModal()" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                    Bulk Update
+                </button>
+                <button onclick="openSyncModal()" class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+                    Sync ROIs
+                </button>
+            </div>
+        </div>
         <div id="prediction-list" class="space-y-4"
              hx-get="/api/v1/predictions/list"
              hx-trigger="load">
             <p class="text-gray-500">Loading predictions...</p>
         </div>
+    </div>
+</div>
+
+<!-- Bulk Update Modal -->
+<div id="bulkUpdateModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeBulkUpdateModal()">&times;</span>
+        <h3 class="text-lg font-bold mb-4">Bulk Update Predictions</h3>
+        <form id="bulkUpdateForm" hx-post="/api/v1/predictions/bulk-update"
+              hx-target="#prediction-list" hx-swap="innerHTML">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Action</label>
+                <select name="action" class="w-full border border-gray-300 rounded px-3 py-2">
+                    <option value="confirm">Confirm All Pending</option>
+                    <option value="reject">Reject All Pending</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">ROI Filter (optional)</label>
+                <input type="text" name="roi_id" placeholder="Enter ROI UUID"
+                       class="w-full border border-gray-300 rounded px-3 py-2">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                Apply Bulk Update
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Sync ROI Modal -->
+<div id="syncModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeSyncModal()">&times;</span>
+        <h3 class="text-lg font-bold mb-4">Sync ROIs</h3>
+        <form id="syncForm" hx-post="/api/v1/rois/sync"
+              hx-target="#prediction-list" hx-swap="innerHTML">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">ROI IDs (comma-separated)</label>
+                <textarea name="roi_ids" placeholder="Enter ROI UUIDs"
+                       class="w-full border border-gray-300 rounded px-3 py-2" rows="3"></textarea>
+            </div>
+            <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+                Sync Selected ROIs
+            </button>
+        </form>
     </div>
 </div>
 
@@ -220,5 +300,34 @@
             document.getElementById('prediction-list').innerHTML =
                 '<p class="text-red-500">Failed to load predictions</p>';
         });
+
+    // Modal functions
+    function openBulkUpdateModal() {
+        document.getElementById('bulkUpdateModal').style.display = 'block';
+    }
+    
+    function closeBulkUpdateModal() {
+        document.getElementById('bulkUpdateModal').style.display = 'none';
+    }
+    
+    function openSyncModal() {
+        document.getElementById('syncModal').style.display = 'block';
+    }
+    
+    function closeSyncModal() {
+        document.getElementById('syncModal').style.display = 'none';
+    }
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const bulkModal = document.getElementById('bulkUpdateModal');
+        const syncModal = document.getElementById('syncModal');
+        if (event.target == bulkModal) {
+            bulkModal.style.display = 'none';
+        }
+        if (event.target == syncModal) {
+            syncModal.style.display = 'none';
+        }
+    }
 </script>
 {% endblock %}

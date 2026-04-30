@@ -1,7 +1,10 @@
 """API routes for managing restoration protocols (SGI Standardized pillar)."""
 
-from fastapi import APIRouter, HTTPException, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db import get_db
 from app.schemas.protocol import Protocol, ProtocolCreate, ProtocolUpdate
 from app.services import protocol_service
@@ -15,7 +18,7 @@ async def create_protocol(protocol: ProtocolCreate, db: AsyncSession = Depends(g
 
 
 @router.get("/{protocol_id}", response_model=Protocol)
-async def get_protocol(protocol_id: int, db: AsyncSession = Depends(get_db)):
+async def get_protocol(protocol_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await protocol_service.get_protocol(db, protocol_id)
     if not result:
         raise HTTPException(status_code=404, detail="Protocol not found")
@@ -23,7 +26,9 @@ async def get_protocol(protocol_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/{protocol_id}", response_model=Protocol)
-async def update_protocol(protocol_id: int, payload: ProtocolUpdate, db: AsyncSession = Depends(get_db)):
+async def update_protocol(
+    protocol_id: uuid.UUID, payload: ProtocolUpdate, db: AsyncSession = Depends(get_db)
+):
     result = await protocol_service.update_protocol(db, protocol_id, payload)
     if not result:
         raise HTTPException(status_code=404, detail="Protocol not found")
@@ -31,6 +36,6 @@ async def update_protocol(protocol_id: int, payload: ProtocolUpdate, db: AsyncSe
 
 
 @router.delete("/{protocol_id}", response_model=dict)
-async def delete_protocol(protocol_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_protocol(protocol_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     await protocol_service.delete_protocol(db, protocol_id)
     return {"detail": "deleted"}

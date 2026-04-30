@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.api.v1 import router as v1_router
+from app.services.job_queue import job_queue
 
 
 @asynccontextmanager
@@ -49,3 +50,18 @@ async def root_dashboard() -> HTMLResponse:
 async def health_check() -> dict[str, Any]:
     """Liveness probe — returns 200 with status ok when the app is running."""
     return {"status": "ok"}
+
+
+@app.get("/api/jobs", tags=["jobs"])
+async def list_jobs() -> dict[str, Any]:
+    """List all background jobs and their statuses."""
+    return job_queue.list_jobs()
+
+
+@app.get("/api/jobs/{job_id}", tags=["jobs"])
+async def get_job_status(job_id: str) -> dict[str, Any]:
+    """Get the status of a specific background job."""
+    job = job_queue.get_status(job_id)
+    if job is None:
+        return {"error": "Job not found"}
+    return job

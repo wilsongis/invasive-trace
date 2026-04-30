@@ -20,9 +20,9 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import date
-from typing import AsyncIterator, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class GEDIFootprint:
     latitude: float
     longitude: float
     canopy_height: float
-    biomass: Optional[float] = None
+    biomass: float | None = None
     quality_flag: int = 0
 
 
@@ -105,7 +105,7 @@ class GEDIClient:
     mode policy (Section 5 of AGENTS.md).
     """
 
-    def __init__(self, config: Optional[GEDIClientConfig] = None) -> None:
+    def __init__(self, config: GEDIClientConfig | None = None) -> None:
         self.config = config or GEDIClientConfig()
         if not self.config.earthdata_user:
             logger.warning(
